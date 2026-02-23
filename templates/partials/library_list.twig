@@ -37,12 +37,11 @@
     </div>
     <button 
         type="button"
-        class="clear-btn" 
+        class="delete-btn clear-btn" 
         style="padding: 6px 12px; font-size: 12px;"
-        hx-delete="/library/{{ track.id }}"
-        hx-target="closest .result-item"
-        hx-swap="outerHTML"
-        hx-confirm="Delete '{{ track.title }}'?"
+        data-track-id="{{ track.id }}"
+        data-track-title="{{ track.title|e('html_attr') }}"
+        onclick="confirmDelete(this)"
     >
         🗑
     </button>
