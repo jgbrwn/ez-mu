@@ -384,9 +384,9 @@ Create a `Caddyfile` in your project root:
     order php_server before file_server
 }
 
-# Use your domain for automatic HTTPS (recommended for production)
-# Caddy will automatically provision and renew Let's Encrypt certificates
-yourdomain.com {
+# Uses SERVER_NAME env var - defaults to :80 for local dev
+# Set SERVER_NAME=yourdomain.com for automatic HTTPS in production
+{$SERVER_NAME:localhost} {
     root * /app/public
     
     # Encode responses
@@ -408,12 +408,12 @@ yourdomain.com {
 }
 ```
 
-> **Note:** Replace `yourdomain.com` with your actual domain. Caddy automatically:
+> **Note:** When `SERVER_NAME` is set to a domain (e.g., `yourdomain.com`), Caddy automatically:
 > - Provisions Let's Encrypt certificates
 > - Redirects HTTP → HTTPS  
 > - Enables HTTP/2 and HTTP/3
 >
-> For local development, use `:80` instead of a domain name.
+> For local development, leave `SERVER_NAME=:80` or `SERVER_NAME=localhost`.
 
 Create `compose.yaml`:
 
@@ -431,9 +431,10 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile  # Custom Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-    # For production with automatic HTTPS, set your domain:
-    # environment:
-    #   - SERVER_NAME=yourdomain.com
+    environment:
+      # For production: set to your domain for automatic HTTPS
+      # For local dev: use :80 or localhost
+      - SERVER_NAME=${SERVER_NAME:-localhost}
     restart: unless-stopped
 
 volumes:
@@ -447,7 +448,12 @@ Deploy:
 git clone https://github.com/jgbrwn/ez-mu.git
 cd ez-mu
 composer install --no-dev --optimize-autoloader
+
+# Local development
 docker compose up -d
+
+# Production (with your domain for automatic HTTPS)
+SERVER_NAME=yourdomain.com docker compose up -d
 ```
 
 #### Option 2: Standalone Binary
