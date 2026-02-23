@@ -48,7 +48,7 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/jgbrwn/ez-mu.git
 cd ez-mu
 
 # Install PHP dependencies
@@ -56,6 +56,10 @@ composer install
 
 # Create directories
 mkdir -p data music/Singles
+
+# Optional: Configure environment variables
+cp .env.example .env
+# Edit .env to add your AcoustID API key (for audio fingerprinting)
 
 # Start the development server
 php -S 0.0.0.0:8000 -t public

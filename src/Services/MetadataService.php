@@ -17,16 +17,16 @@ use Exception;
  */
 class MetadataService
 {
-    private const ACOUSTID_API_KEY = '0NILMQojj4';  // MusicGrabber's API key
     private const ACOUSTID_MIN_SCORE = 0.6;
     private const MB_CONFIDENCE_THRESHOLD = 85;
-    private const USER_AGENT = 'EZ-MU/1.1.0 (https://github.com/ez-mu)';
+    private const USER_AGENT = 'EZ-MU/1.1.0 (https://github.com/jgbrwn/ez-mu)';
     private const TIMEOUT = 10;
 
     private Database $db;
     private bool $enabled = true;
     private bool $canFingerprint = false;
     private bool $useNativeMetaflac = false;
+    private ?string $acoustidApiKey = null;
 
     public function __construct(Database $db)
     {
@@ -34,6 +34,7 @@ class MetadataService
         $this->enabled = $this->getSetting('enable_musicbrainz', true);
         $this->canFingerprint = Environment::has('fpcalc');
         $this->useNativeMetaflac = Environment::has('metaflac');
+        $this->acoustidApiKey = $_ENV['ACOUSTID_API_KEY'] ?? getenv('ACOUSTID_API_KEY') ?: null;
     }
 
     /**
@@ -45,8 +46,8 @@ class MetadataService
             return null;
         }
 
-        // Step 1: Try AcoustID fingerprinting if we have a file
-        if ($filePath && file_exists($filePath)) {
+        // Step 1: Try AcoustID fingerprinting if we have a file and API key
+        if ($filePath && file_exists($filePath) && $this->acoustidApiKey) {
             $fpResult = $this->runFpcalc($filePath);
             if ($fpResult) {
                 [$duration, $fingerprint] = $fpResult;
@@ -136,7 +137,7 @@ class MetadataService
     {
         $url = 'https://api.acoustid.org/v2/lookup';
         $params = [
-            'client' => self::ACOUSTID_API_KEY,
+            'client' => $this->acoustidApiKey,
             'duration' => $duration,
             'fingerprint' => $fingerprint,
             'meta' => 'recordings releasegroups',

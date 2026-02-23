@@ -1,0 +1,39 @@
+EZ-MU - Third Party Notices
+============================
+
+This project includes code and concepts derived from or inspired by the
+following projects:
+
+
+MusicGrabber
+------------
+Original project: https://gitlab.com/g33kphr33k/musicgrabber
+Author: Karl (g33kphr33k)
+License: The Unlicense (Public Domain)
+
+EZ-MU is a PHP/HTMX refactoring of MusicGrabber, originally written in
+Python/FastAPI. We are grateful to Karl for creating the original project
+and releasing it to the public domain.
+
+The original MusicGrabber provided:
+- Monochrome/Tidal integration for lossless FLAC downloads
+- Playlist import functionality (Spotify, Apple Music, YouTube Music, Tidal)
+- AcoustID/MusicBrainz metadata enrichment
+- yt-dlp integration for YouTube/SoundCloud support
+
+
+Other Dependencies
+------------------
+This project uses various open source libraries. See composer.json for the
+complete list. Key dependencies include:
+
+- Slim Framework (MIT License) - https://www.slimframework.com/
+- Twig (BSD-3-Clause License) - https://twig.symfony.com/
+- HTMX (BSD-2-Clause License) - https://htmx.org/
+- PHP-DI (MIT License) - https://php-di.org/
+- vlucas/phpdotenv (BSD-3-Clause License) - https://github.com/vlucas/phpdotenv
+
+External tools (optional):
+- yt-dlp (Unlicense) - https://github.com/yt-dlp/yt-dlp
+- fpcalc/Chromaprint (LGPL-2.1) - https://acoustid.org/chromaprint
+- ffmpeg (LGPL/GPL) - https://ffmpeg.org/

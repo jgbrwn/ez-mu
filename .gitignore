@@ -3,3 +3,4 @@ data/*.db
 var/
 music/*
 !music/.gitkeep
+.env

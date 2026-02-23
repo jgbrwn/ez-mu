@@ -55,7 +55,7 @@ All of the above, plus:
 Download or clone the repository to your local machine:
 
 ```bash
-git clone https://github.com/your-repo/ez-mu.git
+git clone https://github.com/jgbrwn/ez-mu.git
 cd ez-mu
 composer install --no-dev --optimize-autoloader
 ```
@@ -201,7 +201,7 @@ sudo apt install libchromaprint-tools
 
 ```bash
 cd /var/www
-git clone https://github.com/your-repo/ez-mu.git
+git clone https://github.com/jgbrwn/ez-mu.git
 cd ez-mu
 composer install --no-dev --optimize-autoloader
 mkdir -p data music/Singles

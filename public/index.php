@@ -11,6 +11,10 @@ use Slim\Factory\AppFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+// Load environment variables
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->safeLoad();  // Don't throw if .env is missing
+
 // Build DI container
 $containerBuilder = new ContainerBuilder();
 $containerBuilder->addDefinitions(__DIR__ . '/../config/container.php');
