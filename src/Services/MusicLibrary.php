@@ -19,14 +19,33 @@ class MusicLibrary
     }
 
     /**
-     * Get all tracks in library
+     * Get all tracks in library with pagination and sorting
+     * 
+     * @param string $sort Sort option: 'recent', 'artist', 'title'
+     * @param int $limit Items per page
+     * @param int $offset Starting offset
      */
-    public function getTracks(int $limit = 100, int $offset = 0): array
+    public function getTracks(string $sort = 'recent', int $limit = 25, int $offset = 0): array
     {
+        $orderBy = match ($sort) {
+            'artist' => 'artist ASC, title ASC',
+            'title' => 'title ASC, artist ASC',
+            default => 'created_at DESC',
+        };
+        
         return $this->db->query(
-            'SELECT * FROM library ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            "SELECT * FROM library ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             [$limit, $offset]
         );
+    }
+
+    /**
+     * Get total track count
+     */
+    public function getTrackCount(): int
+    {
+        $result = $this->db->queryOne('SELECT COUNT(*) as count FROM library');
+        return (int)($result['count'] ?? 0);
     }
 
     /**
@@ -38,15 +57,34 @@ class MusicLibrary
     }
 
     /**
-     * Search tracks
+     * Search tracks with pagination and sorting
      */
-    public function searchTracks(string $query): array
+    public function searchTracks(string $query, string $sort = 'recent', int $limit = 25, int $offset = 0): array
     {
-        $query = '%' . $query . '%';
+        $searchQuery = '%' . $query . '%';
+        $orderBy = match ($sort) {
+            'artist' => 'artist ASC, title ASC',
+            'title' => 'title ASC, artist ASC',
+            default => 'created_at DESC',
+        };
+        
         return $this->db->query(
-            'SELECT * FROM library WHERE title LIKE ? OR artist LIKE ? ORDER BY created_at DESC LIMIT 100',
-            [$query, $query]
+            "SELECT * FROM library WHERE title LIKE ? OR artist LIKE ? ORDER BY {$orderBy} LIMIT ? OFFSET ?",
+            [$searchQuery, $searchQuery, $limit, $offset]
         );
+    }
+
+    /**
+     * Get search result count
+     */
+    public function getSearchCount(string $query): int
+    {
+        $searchQuery = '%' . $query . '%';
+        $result = $this->db->queryOne(
+            'SELECT COUNT(*) as count FROM library WHERE title LIKE ? OR artist LIKE ?',
+            [$searchQuery, $searchQuery]
+        );
+        return (int)($result['count'] ?? 0);
     }
 
     /**

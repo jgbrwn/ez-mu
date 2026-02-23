@@ -23,14 +23,22 @@ class LibraryController
      */
     public function index(Request $request, Response $response): Response
     {
-        $query = $request->getQueryParams()['q'] ?? '';
+        $params = $request->getQueryParams();
+        $query = $params['q'] ?? '';
+        $sort = $params['sort'] ?? 'recent';
+        $page = max(1, (int)($params['page'] ?? 1));
+        $perPage = 25;
+        $offset = ($page - 1) * $perPage;
         
         if (!empty($query)) {
-            $tracks = $this->library->searchTracks($query);
+            $tracks = $this->library->searchTracks($query, $sort, $perPage, $offset);
+            $totalTracks = $this->library->getSearchCount($query);
         } else {
-            $tracks = $this->library->getTracks();
+            $tracks = $this->library->getTracks($sort, $perPage, $offset);
+            $totalTracks = $this->library->getTrackCount();
         }
-
+        
+        $totalPages = (int)ceil($totalTracks / $perPage);
         $stats = $this->library->getStats();
         $artists = $this->library->getArtists();
 
@@ -39,6 +47,11 @@ class LibraryController
             'stats' => $stats,
             'artists' => $artists,
             'query' => $query,
+            'sort' => $sort,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'totalTracks' => $totalTracks,
+            'perPage' => $perPage,
         ]);
     }
 
@@ -47,16 +60,30 @@ class LibraryController
      */
     public function libraryPartial(Request $request, Response $response): Response
     {
-        $query = $request->getQueryParams()['q'] ?? '';
+        $params = $request->getQueryParams();
+        $query = $params['q'] ?? '';
+        $sort = $params['sort'] ?? 'recent';
+        $page = max(1, (int)($params['page'] ?? 1));
+        $perPage = 25;
+        $offset = ($page - 1) * $perPage;
         
         if (!empty($query)) {
-            $tracks = $this->library->searchTracks($query);
+            $tracks = $this->library->searchTracks($query, $sort, $perPage, $offset);
+            $totalTracks = $this->library->getSearchCount($query);
         } else {
-            $tracks = $this->library->getTracks();
+            $tracks = $this->library->getTracks($sort, $perPage, $offset);
+            $totalTracks = $this->library->getTrackCount();
         }
+        
+        $totalPages = (int)ceil($totalTracks / $perPage);
 
         return $this->twig->render($response, 'partials/library_list.twig', [
             'tracks' => $tracks,
+            'query' => $query,
+            'sort' => $sort,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'totalTracks' => $totalTracks,
         ]);
     }
 

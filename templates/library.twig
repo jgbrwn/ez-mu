@@ -12,23 +12,31 @@
 </div>
 
 <div class="search-box" style="margin-bottom: 16px;">
-    <form hx-get="/partials/library" hx-target="#library-list" hx-trigger="input changed delay:300ms from:#librarySearch, submit">
-        <input
-            type="text"
-            class="search-input"
-            id="librarySearch"
-            name="q"
-            placeholder="Search your library..."
-            value="{{ query }}"
-            autocomplete="off"
-            style="padding-right: 20px;"
-        >
+    <form id="libraryFilterForm" hx-get="/partials/library" hx-target="#library-list" hx-trigger="input changed delay:300ms from:#librarySearch, change from:#librarySort, submit">
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <input
+                type="text"
+                class="search-input"
+                id="librarySearch"
+                name="q"
+                placeholder="Search your library..."
+                value="{{ query }}"
+                autocomplete="off"
+                style="flex: 1;"
+            >
+            <select name="sort" id="librarySort" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                <option value="recent" {{ sort == 'recent' ? 'selected' : '' }}>🕒 Recently Added</option>
+                <option value="artist" {{ sort == 'artist' ? 'selected' : '' }}>🎤 Artist A-Z</option>
+                <option value="title" {{ sort == 'title' ? 'selected' : '' }}>🎵 Title A-Z</option>
+            </select>
+            <input type="hidden" name="page" value="1">
+        </div>
     </form>
 </div>
 
 <div class="queue-header">
-    <h2 style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
-        {{ stats.track_count }} tracks • {{ (stats.total_size / 1048576)|number_format(1) }} MB
+    <h2 class="library-stats" style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+        {{ totalTracks }} tracks • {{ (stats.total_size / 1048576)|number_format(1) }} MB
     </h2>
     <div style="display: flex; gap: 8px;">
         <button id="selectAllBtn" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" onclick="toggleSelectAll()">

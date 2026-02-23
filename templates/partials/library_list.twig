@@ -1,8 +1,8 @@
 {% if tracks is empty %}
 <div class="empty-state">
     <div class="empty-state-icon">📚</div>
-    <p>Your library is empty</p>
-    <p style="font-size: 13px; margin-top: 8px;">Search and download music to build your collection</p>
+    <p>{% if query %}No tracks match "{{ query }}"{% else %}Your library is empty{% endif %}</p>
+    <p style="font-size: 13px; margin-top: 8px;">{% if query %}Try a different search{% else %}Search and download music to build your collection{% endif %}</p>
 </div>
 {% else %}
 {% for track in tracks %}
@@ -47,4 +47,35 @@
     </button>
 </div>
 {% endfor %}
+
+{# Pagination #}
+{% if totalPages is defined and totalPages > 1 %}
+<div class="pagination" style="margin-top: 16px;">
+    {% if page > 1 %}
+    <button 
+        class="page-btn" 
+        hx-get="/partials/library?page={{ page - 1 }}&sort={{ sort }}&q={{ query|url_encode }}"
+        hx-target="#library-list"
+        hx-swap="innerHTML"
+    >
+        ← Prev
+    </button>
+    {% endif %}
+    
+    <span style="color: var(--text-secondary); font-size: 13px;">
+        Page {{ page }} of {{ totalPages }}
+    </span>
+    
+    {% if page < totalPages %}
+    <button 
+        class="page-btn" 
+        hx-get="/partials/library?page={{ page + 1 }}&sort={{ sort }}&q={{ query|url_encode }}"
+        hx-target="#library-list"
+        hx-swap="innerHTML"
+    >
+        Next →
+    </button>
+    {% endif %}
+</div>
+{% endif %}
 {% endif %}
