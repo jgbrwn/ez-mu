@@ -112,11 +112,18 @@ class PlaylistService
             throw new Exception('Could not extract tracks from Spotify. Playlist may be empty or private.');
         }
 
+        // Note: Spotify embed page typically shows up to 100 tracks
+        $warning = null;
+        if (count($tracks) >= 100) {
+            $warning = 'This playlist may have more tracks than shown. Spotify limits embed to ~100 tracks.';
+        }
+
         return [
             'name' => $name,
             'platform' => 'spotify',
             'tracks' => $tracks,
             'count' => count($tracks),
+            'warning' => $warning,
         ];
     }
 
@@ -178,11 +185,29 @@ class PlaylistService
             }
         }
 
-        // Also check for continuation data if playlist is long
-        // YouTube loads more videos dynamically, but first page usually has 100+
-
         if (empty($tracks)) {
             throw new Exception('No tracks found in YouTube playlist. The playlist may be private or empty.');
+        }
+
+        // Check if there are more tracks (continuation token present)
+        $hasMore = false;
+        foreach ($tabs as $tab) {
+            $content = $tab['tabRenderer']['content']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents'][0]['playlistVideoListRenderer']['contents'] ?? null;
+            if ($content) {
+                foreach ($content as $item) {
+                    if (isset($item['continuationItemRenderer'])) {
+                        $hasMore = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        // Note: YouTube only loads ~100 videos in initial page
+        // Larger playlists would need continuation API calls
+        $warning = null;
+        if ($hasMore) {
+            $warning = 'This playlist has more tracks than shown. YouTube limits initial load to ~100 tracks.';
         }
 
         return [
@@ -190,6 +215,7 @@ class PlaylistService
             'platform' => 'youtube',
             'tracks' => $tracks,
             'count' => count($tracks),
+            'warning' => $warning,
         ];
     }
 

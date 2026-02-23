@@ -4,6 +4,11 @@
 </div>
 {% elseif playlist %}
 <div style="padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
+    {% if playlist.warning %}
+    <div style="padding: 8px 12px; background: rgba(234, 179, 8, 0.1); border: 1px solid #eab308; border-radius: 6px; color: #eab308; font-size: 12px; margin-bottom: 12px;">
+        ⚠️ {{ playlist.warning }}
+    </div>
+    {% endif %}
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div>
             <div style="font-size: 15px; font-weight: 600;">{{ playlist.name }}</div>
