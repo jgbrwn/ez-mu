@@ -34,7 +34,7 @@ class SettingsController
     {
         $data = $request->getParsedBody();
         
-        $allowedSettings = ['convert_to_flac', 'organize_by_artist', 'theme', 'youtube_enabled'];
+        $allowedSettings = ['convert_to_flac', 'organize_by_artist', 'theme', 'youtube_enabled', 'enable_musicbrainz'];
         $updates = [];
         
         foreach ($allowedSettings as $key) {
@@ -44,7 +44,7 @@ class SettingsController
         }
 
         // Handle checkboxes
-        foreach (['convert_to_flac', 'organize_by_artist', 'youtube_enabled'] as $checkbox) {
+        foreach (['convert_to_flac', 'organize_by_artist', 'youtube_enabled', 'enable_musicbrainz'] as $checkbox) {
             if (!isset($data[$checkbox])) {
                 $updates[$checkbox] = '0';
             }

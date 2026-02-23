@@ -14,6 +14,7 @@ use App\Services\MusicLibrary;
 use App\Services\RateLimiter;
 use App\Services\MonochromeService;
 use App\Services\PlaylistService;
+use App\Services\MetadataService;
 
 return [
     // Configuration
@@ -74,6 +75,7 @@ return [
             $c->get(Database::class),
             $c->get(MonochromeService::class),
             $c->get(RateLimiter::class),
+            $c->get(MetadataService::class),
             $settings['music_dir'],
             $settings['singles_dir']
         );
@@ -94,5 +96,9 @@ return [
 
     PlaylistService::class => function () {
         return new PlaylistService();
+    },
+
+    MetadataService::class => function (ContainerInterface $c) {
+        return new MetadataService($c->get(Database::class));
     },
 ];

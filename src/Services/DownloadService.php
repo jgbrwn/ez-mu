@@ -9,6 +9,7 @@ class DownloadService
     private Database $db;
     private MonochromeService $monochrome;
     private RateLimiter $rateLimiter;
+    private ?MetadataService $metadata;
     private string $musicDir;
     private string $singlesDir;
 
@@ -16,12 +17,14 @@ class DownloadService
         Database $db,
         MonochromeService $monochrome,
         RateLimiter $rateLimiter,
+        ?MetadataService $metadata,
         string $musicDir,
         string $singlesDir
     ) {
         $this->db = $db;
         $this->monochrome = $monochrome;
         $this->rateLimiter = $rateLimiter;
+        $this->metadata = $metadata;
         $this->musicDir = $musicDir;
         $this->singlesDir = $singlesDir;
     }
@@ -76,6 +79,12 @@ class DownloadService
             } else {
                 $result = $this->downloadWithYtDlp($job);
             }
+
+            // Enrich metadata for non-Monochrome sources
+            // (Monochrome/Tidal metadata is authoritative - only enrich year)
+            if ($this->metadata && !empty($result['file_path'])) {
+                $result = $this->enrichMetadata($job, $result, $source === 'monochrome');
+            }
             
             $this->db->execute(
                 "UPDATE jobs SET 
@@ -84,6 +93,7 @@ class DownloadService
                     codec = ?,
                     bitrate = ?,
                     duration = ?,
+                    metadata_source = ?,
                     completed_at = datetime('now')
                  WHERE id = ?",
                 [
@@ -91,6 +101,7 @@ class DownloadService
                     $result['codec'] ?? 'unknown',
                     $result['bitrate'] ?? 0,
                     $result['duration'] ?? 0,
+                    $result['metadata_source'] ?? 'source',
                     $jobId
                 ]
             );
@@ -254,6 +265,129 @@ class DownloadService
             'bitrate' => $fileInfo['bitrate'] ?? 0,
             'duration' => $fileInfo['duration'] ?? 0,
         ];
+    }
+
+    /**
+     * Enrich metadata using AcoustID/MusicBrainz
+     * 
+     * For Monochrome (Tidal): only fill in year if missing, keep everything else
+     * For YouTube/SoundCloud: use fingerprint/MB lookup to get canonical metadata
+     */
+    private function enrichMetadata(array $job, array $result, bool $isMonochrome = false): array
+    {
+        $artist = $result['artist'] ?? $job['artist'] ?? 'Unknown';
+        $title = $result['title'] ?? $job['title'] ?? 'Unknown';
+        $filePath = $result['file_path'];
+
+        error_log("Enriching metadata for: {$artist} - {$title}");
+
+        $mbData = $this->metadata->lookupMetadata($artist, $title, $filePath);
+        if (!$mbData) {
+            error_log("No MusicBrainz data found");
+            return $result;
+        }
+
+        error_log("MusicBrainz data: " . json_encode($mbData));
+
+        if ($isMonochrome) {
+            // For Monochrome/Tidal: only enrich year from MusicBrainz
+            // Tidal metadata is authoritative for artist/title/album
+            if (!empty($mbData['year']) && empty($result['year'])) {
+                $result['year'] = $mbData['year'];
+            }
+            $result['metadata_source'] = 'tidal';
+            
+            // Apply Tidal's metadata to the file (CDN files don't have tags)
+            $this->metadata->applyMetadataToFile(
+                $filePath,
+                $artist,
+                $title,
+                $result['album'] ?? null,
+                $result['year'] ?? null
+            );
+        } else {
+            // For YouTube/SoundCloud: use MusicBrainz canonical data
+            $oldArtist = $artist;
+            $oldTitle = $title;
+
+            if (!empty($mbData['artist'])) {
+                $result['artist'] = $mbData['artist'];
+            }
+            if (!empty($mbData['title'])) {
+                $result['title'] = $mbData['title'];
+            }
+            if (!empty($mbData['album'])) {
+                $result['album'] = $mbData['album'];
+            }
+            if (!empty($mbData['year'])) {
+                $result['year'] = $mbData['year'];
+            }
+            $result['metadata_source'] = $mbData['metadata_source'] ?? 'musicbrainz';
+
+            // Apply tags to the file
+            $this->metadata->applyMetadataToFile(
+                $filePath,
+                $result['artist'] ?? $artist,
+                $result['title'] ?? $title,
+                $result['album'] ?? null,
+                $result['year'] ?? null
+            );
+
+            // If artist changed significantly, relocate file
+            $newArtist = $this->sanitizeFilename($result['artist'] ?? $artist);
+            $newTitle = $this->sanitizeFilename($result['title'] ?? $title);
+            
+            if ($newArtist !== $this->sanitizeFilename($oldArtist) ||
+                $newTitle !== $this->sanitizeFilename($oldTitle)) {
+                $result = $this->relocateFile($result, $newArtist, $newTitle);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Relocate file to correct artist/title path after metadata enrichment
+     */
+    private function relocateFile(array $result, string $newArtist, string $newTitle): array
+    {
+        $oldPath = $result['file_path'];
+        if (!file_exists($oldPath)) {
+            return $result;
+        }
+
+        $ext = pathinfo($oldPath, PATHINFO_EXTENSION);
+        $newDir = $this->musicDir . '/' . $this->singlesDir . '/' . $newArtist;
+        
+        if (!is_dir($newDir)) {
+            mkdir($newDir, 0755, true);
+        }
+
+        $newPath = $newDir . '/' . $newTitle . '.' . $ext;
+        
+        // Avoid overwriting existing file
+        if (file_exists($newPath) && $newPath !== $oldPath) {
+            $i = 1;
+            while (file_exists($newPath)) {
+                $newPath = $newDir . '/' . $newTitle . ' (' . $i . ').' . $ext;
+                $i++;
+            }
+        }
+
+        if ($oldPath !== $newPath) {
+            if (rename($oldPath, $newPath)) {
+                error_log("Relocated file: {$oldPath} -> {$newPath}");
+                $result['file_path'] = $newPath;
+
+                // Clean up empty old directory
+                $oldDir = dirname($oldPath);
+                if (is_dir($oldDir) && count(glob($oldDir . '/*')) === 0) {
+                    rmdir($oldDir);
+                }
+            }
+        }
+
+        return $result;
     }
 
     private function addToLibrary(array $job, array $result): void

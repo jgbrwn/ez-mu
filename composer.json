@@ -7,7 +7,8 @@
         "slim/psr7": "^1.8",
         "php-di/php-di": "^7.1",
         "slim/twig-view": "^3.4",
-        "twig/twig": "^3.23"
+        "twig/twig": "^3.23",
+        "james-heinrich/getid3": "^1.9"
     },
     "autoload": {
         "psr-4": {

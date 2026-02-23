@@ -78,6 +78,25 @@
     </div>
 
     <div class="settings-section">
+        <div class="settings-section-title">Metadata</div>
+        <div class="settings-grid">
+            <label class="settings-label">
+                <div>
+                    <span>MusicBrainz Lookup</span>
+                    <div style="font-size: 11px; color: var(--text-secondary);">Fingerprint audio + enrich metadata</div>
+                </div>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="enable_musicbrainz" value="1" {% if settings.enable_musicbrainz != '0' %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px;">
+            When enabled, downloads are fingerprinted with AcoustID and matched against MusicBrainz to get accurate artist, title, album, and year metadata. For Monochrome/Tidal sources, only the release year is enriched (Tidal metadata is authoritative).
+        </div>
+    </div>
+
+    <div class="settings-section">
         <div class="settings-section-title">Appearance</div>
         <div class="settings-grid">
             <label class="settings-label">
