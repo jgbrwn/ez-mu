@@ -785,9 +785,13 @@ h1 {
 }
 
 .loading {
-    display: flex;
+    display: none;
     justify-content: center;
     padding: 40px;
+}
+
+.loading.htmx-request {
+    display: flex;
 }
 
 .spinner {
