@@ -272,6 +272,72 @@ server {
 </VirtualHost>
 ```
 
+### Caddy Configuration
+
+Caddy provides automatic HTTPS and simple configuration:
+
+```caddyfile
+yourdomain.com {
+    root * /var/www/ez-mu/public
+    php_fastcgi unix//var/run/php/php8.2-fpm.sock
+    file_server
+    
+    # Route all requests through index.php (Slim framework)
+    try_files {path} {path}/ /index.php?{query}
+    
+    # Block access to sensitive files
+    @blocked {
+        path /.* /composer.* /vendor/*
+    }
+    respond @blocked 403
+    
+    # Basic auth (optional)
+    # basicauth /* {
+    #     # Generate hash: caddy hash-password
+    #     admin $2a$14$HASH_FROM_CADDY_HASH_PASSWORD
+    # }
+}
+```
+
+**To enable basic auth:**
+
+1. Generate a password hash:
+   ```bash
+   caddy hash-password
+   # Enter your password when prompted
+   ```
+
+2. Uncomment the `basicauth` block and replace the hash:
+   ```caddyfile
+   basicauth /* {
+       yourusername $2a$14$yourGeneratedHashHere
+   }
+   ```
+
+3. Reload Caddy:
+   ```bash
+   sudo systemctl reload caddy
+   ```
+
+**Alternative: Caddy with PHP built-in server (development/simple setups):**
+
+```caddyfile
+yourdomain.com {
+    reverse_proxy localhost:8000
+    
+    # Basic auth (optional)
+    # basicauth /* {
+    #     admin $2a$14$HASH_FROM_CADDY_HASH_PASSWORD
+    # }
+}
+```
+
+Then run PHP's built-in server:
+```bash
+cd /var/www/ez-mu
+php -S 127.0.0.1:8000 -t public
+```
+
 ---
 
 ## Configuration
