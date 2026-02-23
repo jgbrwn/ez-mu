@@ -24,11 +24,13 @@ class MonochromeService
 
     /**
      * Search Monochrome/Tidal for tracks
+     * 
+     * @return array{results: array, error: string|null}
      */
     public function search(string $query, int $limit = 15): array
     {
         if (empty(trim($query))) {
-            return [];
+            return ['results' => [], 'error' => null];
         }
 
         // Rate limit: 10 requests per minute for Monochrome
@@ -36,13 +38,32 @@ class MonochromeService
 
         try {
             $url = self::API_URL . '/search/?' . http_build_query(['s' => $query]);
-            $response = $this->httpGet($url);
+            $http = $this->httpGet($url);
             
-            if (!$response) {
-                return [];
+            // cURL error
+            if ($http['error']) {
+                return ['results' => [], 'error' => 'Monochrome: ' . $http['error']];
+            }
+            
+            // No response body
+            if (!$http['body']) {
+                return ['results' => [], 'error' => 'Monochrome API unavailable'];
             }
 
-            $data = json_decode($response, true);
+            $data = json_decode($http['body'], true);
+            
+            // Check for API error response (can be 'error' or 'detail')
+            $apiError = $data['error'] ?? $data['detail'] ?? null;
+            if ($apiError) {
+                $errorMsg = is_string($apiError) ? $apiError : 'Unknown error';
+                return ['results' => [], 'error' => "Monochrome: {$errorMsg}"];
+            }
+            
+            // Non-2xx status without error message in body
+            if ($http['code'] < 200 || $http['code'] >= 300) {
+                return ['results' => [], 'error' => "Monochrome: HTTP {$http['code']}"];
+            }
+            
             $items = $data['data']['items'] ?? [];
 
             $results = [];
@@ -80,11 +101,11 @@ class MonochromeService
             // Sort by quality score
             usort($results, fn($a, $b) => $b['quality_score'] <=> $a['quality_score']);
 
-            return array_slice($results, 0, $limit);
+            return ['results' => array_slice($results, 0, $limit), 'error' => null];
 
         } catch (Exception $e) {
             error_log("Monochrome search error: " . $e->getMessage());
-            return [];
+            return ['results' => [], 'error' => 'Monochrome: ' . $e->getMessage()];
         }
     }
 
@@ -97,13 +118,13 @@ class MonochromeService
 
         try {
             $url = self::API_URL . '/info/?' . http_build_query(['id' => $trackId]);
-            $response = $this->httpGet($url);
+            $http = $this->httpGet($url);
             
-            if (!$response) {
+            if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
                 return null;
             }
 
-            $data = json_decode($response, true);
+            $data = json_decode($http['body'], true);
             return $data['data'] ?? null;
 
         } catch (Exception $e) {
@@ -127,13 +148,13 @@ class MonochromeService
         foreach ($qualities as $q) {
             try {
                 $url = self::API_URL . '/track/?' . http_build_query(['id' => $trackId, 'quality' => $q]);
-                $response = $this->httpGet($url);
+                $http = $this->httpGet($url);
                 
-                if (!$response) {
+                if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
                     continue;
                 }
 
-                $data = json_decode($response, true);
+                $data = json_decode($http['body'], true);
                 $trackData = $data['data'] ?? null;
                 
                 if (!$trackData || empty($trackData['manifest'])) {
@@ -260,15 +281,15 @@ class MonochromeService
 
         try {
             $coverUrl = $this->getCoverUrl($coverUuid, 640);
-            $coverData = $this->httpGet($coverUrl);
+            $http = $this->httpGet($coverUrl);
             
-            if (!$coverData) {
+            if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
                 return;
             }
 
             // Save cover temporarily
             $tempCover = sys_get_temp_dir() . '/ez-mu-cover-' . md5($coverUuid) . '.jpg';
-            file_put_contents($tempCover, $coverData);
+            file_put_contents($tempCover, $http['body']);
 
             // Use metaflac to embed (if available)
             if (shell_exec('which metaflac')) {
@@ -341,7 +362,12 @@ class MonochromeService
         return sprintf('%d:%02d', $minutes, $secs);
     }
 
-    private function httpGet(string $url): ?string
+    /**
+     * HTTP GET with full response info
+     * 
+     * @return array{body: string|false, code: int, error: string|null}
+     */
+    private function httpGet(string $url): array
     {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -353,12 +379,13 @@ class MonochromeService
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
-        if ($httpCode >= 200 && $httpCode < 300) {
-            return $response;
-        }
-
-        return null;
+        return [
+            'body' => $response,
+            'code' => $httpCode,
+            'error' => $curlError ?: null,
+        ];
     }
 }

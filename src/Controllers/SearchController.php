@@ -32,6 +32,9 @@ class SearchController
         }
 
         try {
+            $results = [];
+            $errors = [];
+            
             switch ($source) {
                 case 'youtube':
                     $results = $this->searchService->searchYouTube($query);
@@ -40,13 +43,26 @@ class SearchController
                     $results = $this->searchService->searchSoundCloud($query);
                     break;
                 default:
-                    $results = $this->searchService->searchAll($query);
+                    $searchResponse = $this->searchService->searchAll($query);
+                    $results = $searchResponse['results'];
+                    $errors = $searchResponse['errors'];
+            }
+
+            // Build message for empty results
+            $message = null;
+            if (empty($results)) {
+                if (!empty($errors)) {
+                    $message = implode('; ', $errors);
+                } else {
+                    $message = 'No results found';
+                }
             }
 
             return $this->twig->render($response, 'partials/results.twig', [
                 'results' => $results,
                 'query' => $query,
-                'message' => empty($results) ? 'No results found' : null,
+                'message' => $message,
+                'warnings' => !empty($results) && !empty($errors) ? $errors : null,
             ]);
         } catch (\Exception $e) {
             return $this->twig->render($response, 'partials/results.twig', [

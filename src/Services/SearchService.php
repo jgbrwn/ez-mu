@@ -30,15 +30,21 @@ class SearchService
 
     /**
      * Search all enabled sources
+     * 
+     * @return array{results: array, errors: array}
      */
     public function searchAll(string $query, int $limit = 15): array
     {
         $results = [];
+        $errors = [];
         $youtubeEnabled = $this->settings->getBool('youtube_enabled', false);
 
         // Primary: Monochrome (Tidal lossless) - always available (pure HTTP)
-        $monoResults = $this->monochrome->search($query, $limit);
-        $results = array_merge($results, $monoResults);
+        $monoResponse = $this->monochrome->search($query, $limit);
+        $results = array_merge($results, $monoResponse['results']);
+        if ($monoResponse['error']) {
+            $errors[] = $monoResponse['error'];
+        }
 
         // Secondary: SoundCloud (requires yt-dlp)
         if ($this->hasYtDlp) {
@@ -58,7 +64,10 @@ class SearchService
         // Log search
         $this->logSearch($query, 'all', count($results));
 
-        return array_slice($results, 0, $limit * 2);
+        return [
+            'results' => array_slice($results, 0, $limit * 2),
+            'errors' => $errors,
+        ];
     }
 
     /**
@@ -167,10 +176,16 @@ class SearchService
 
     /**
      * Search Monochrome/Tidal only
+     * 
+     * @return array{results: array, errors: array}
      */
     public function searchMonochrome(string $query, int $limit = 15): array
     {
-        return $this->monochrome->search($query, $limit);
+        $response = $this->monochrome->search($query, $limit);
+        return [
+            'results' => $response['results'],
+            'errors' => $response['error'] ? [$response['error']] : [],
+        ];
     }
 
     private function formatYouTubeResult(array $data, string $query = ''): array
