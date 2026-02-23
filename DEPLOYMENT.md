@@ -7,6 +7,9 @@ This guide covers deploying EZ-MU to shared hosting (DirectAdmin, cPanel, etc.) 
 1. [Requirements](#requirements)
 2. [Shared Hosting Deployment](#shared-hosting-deployment)
 3. [VPS/Dedicated Server Deployment](#vpsdedicated-server-deployment)
+   - [Traditional (Nginx/Apache + PHP-FPM)](#install-system-dependencies)
+   - [Caddy + PHP-FPM](#caddy-configuration)
+   - [FrankenPHP (Recommended)](#frankenphp-deployment)
 4. [Password Protection](#password-protection)
 5. [Configuration](#configuration)
 6. [Troubleshooting](#troubleshooting)
@@ -183,16 +186,19 @@ A future version may include built-in user authentication.
 
 ## VPS/Dedicated Server Deployment
 
-For full functionality including YouTube and SoundCloud:
+For full functionality including YouTube and SoundCloud.
+
+> **💡 Using FrankenPHP?** Skip the PHP installation below and see the
+> [FrankenPHP Deployment](#frankenphp-deployment) section instead.
 
 ### Install System Dependencies
 
-#### Debian/Ubuntu
+#### Debian/Ubuntu (Traditional PHP-FPM)
 
 ```bash
 # PHP and extensions
 sudo apt update
-sudo apt install php8.2 php8.2-sqlite3 php8.2-curl php8.2-mbstring php8.2-zip
+sudo apt install php8.2-fpm php8.2-sqlite3 php8.2-curl php8.2-mbstring php8.2-zip
 
 # Optional: Full features
 sudo apt install ffmpeg flac
@@ -319,23 +325,206 @@ yourdomain.com {
    sudo systemctl reload caddy
    ```
 
-**Alternative: Caddy with PHP built-in server (development/simple setups):**
+> **💡 Want an all-in-one solution?** See [FrankenPHP Deployment](#frankenphp-deployment)
+> for Caddy + PHP in a single binary with automatic HTTPS.
+
+---
+
+### FrankenPHP Deployment
+
+[FrankenPHP](https://frankenphp.dev) combines Caddy and PHP into a single binary with automatic
+HTTPS, HTTP/2, and HTTP/3 support. No separate PHP-FPM installation needed.
+
+#### Option 1: Docker (Recommended)
+
+Create a `Dockerfile` in your project:
+
+```dockerfile
+FROM dunglas/frankenphp
+
+# Install required PHP extensions
+RUN install-php-extensions \
+    pdo_sqlite \
+    curl \
+    mbstring \
+    zip \
+    opcache
+
+# Copy application
+COPY . /app
+
+# Set document root to public/
+ENV SERVER_NAME=:80
+ENV FRANKENPHP_CONFIG="root * /app/public"
+
+# Create required directories
+RUN mkdir -p /app/data /app/music/Singles && \
+    chown -R www-data:www-data /app/data /app/music
+
+WORKDIR /app
+```
+
+Create a `Caddyfile` in your project root:
 
 ```caddyfile
-yourdomain.com {
-    reverse_proxy localhost:8000
+{
+    # Global options
+    frankenphp
+    order php_server before file_server
+}
+
+:80 {
+    root * /app/public
     
-    # Basic auth (optional)
+    # Encode responses
+    encode zstd br gzip
+    
+    # Block sensitive files
+    @blocked {
+        path /.env /.git/* /composer.* /vendor/*
+    }
+    respond @blocked 403
+    
+    # Basic auth (optional - uncomment to enable)
     # basicauth /* {
-    #     admin $2a$14$HASH_FROM_CADDY_HASH_PASSWORD
+    #     admin $2a$14$YOUR_HASH_HERE
     # }
+    
+    # Serve PHP
+    php_server
 }
 ```
 
-Then run PHP's built-in server:
+Create `compose.yaml`:
+
+```yaml
+services:
+  ezmu:
+    build: .
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./data:/app/data
+      - ./music:/app/music
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+```
+
+Deploy:
+
 ```bash
-cd /var/www/ez-mu
-php -S 127.0.0.1:8000 -t public
+git clone https://github.com/jgbrwn/ez-mu.git
+cd ez-mu
+composer install --no-dev --optimize-autoloader
+docker compose up -d
+```
+
+#### Option 2: Standalone Binary
+
+Download FrankenPHP:
+
+```bash
+# Download latest FrankenPHP
+curl -L https://github.com/dunglas/frankenphp/releases/latest/download/frankenphp-linux-x86_64 -o /usr/local/bin/frankenphp
+chmod +x /usr/local/bin/frankenphp
+```
+
+> **Note:** The standalone binary includes common extensions. Verify required extensions:
+> ```bash
+> frankenphp php-cli -m | grep -E "pdo_sqlite|curl|mbstring|zip"
+> ```
+> If any are missing, use the Docker method or build a custom binary.
+
+Deploy the application:
+
+```bash
+cd /var/www
+git clone https://github.com/jgbrwn/ez-mu.git
+cd ez-mu
+composer install --no-dev --optimize-autoloader
+mkdir -p data music/Singles
+```
+
+Create `/var/www/ez-mu/Caddyfile`:
+
+```caddyfile
+{
+    frankenphp
+    order php_server before file_server
+}
+
+yourdomain.com {
+    root * /var/www/ez-mu/public
+    
+    encode zstd br gzip
+    
+    @blocked {
+        path /.env /.git/* /composer.* /vendor/*
+    }
+    respond @blocked 403
+    
+    # Basic auth (optional)
+    # Generate hash: frankenphp hash-password
+    # basicauth /* {
+    #     admin $2a$14$YOUR_HASH_HERE
+    # }
+    
+    php_server
+}
+```
+
+Create systemd service `/etc/systemd/system/ezmu.service`:
+
+```ini
+[Unit]
+Description=EZ-MU (FrankenPHP)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ez-mu
+ExecStart=/usr/local/bin/frankenphp run --config /var/www/ez-mu/Caddyfile
+Restart=always
+RestartSec=5
+
+# Environment for optional tools
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable ezmu
+sudo systemctl start ezmu
+```
+
+#### Installing Optional Tools (FrankenPHP)
+
+YouTube/SoundCloud and fingerprinting tools are installed separately:
+
+```bash
+# yt-dlp for YouTube/SoundCloud
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
+
+# ffmpeg for audio conversion
+sudo apt install ffmpeg
+
+# Chromaprint for audio fingerprinting (optional)
+sudo apt install libchromaprint-tools
 ```
 
 ---
