@@ -350,6 +350,17 @@ RUN install-php-extensions \
     zip \
     opcache
 
+# Install optional tools for full functionality
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    flac \
+    libchromaprint-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install yt-dlp for YouTube/SoundCloud support
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+    -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp
+
 # Copy application
 COPY . /app
 
@@ -520,8 +531,8 @@ YouTube/SoundCloud and fingerprinting tools are installed separately:
 sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
 sudo chmod a+rx /usr/local/bin/yt-dlp
 
-# ffmpeg for audio conversion
-sudo apt install ffmpeg
+# ffmpeg and flac for audio conversion
+sudo apt install ffmpeg flac
 
 # Chromaprint for audio fingerprinting (optional)
 sudo apt install libchromaprint-tools
