@@ -6,6 +6,19 @@ A self-hosted music acquisition service built with PHP, HTMX, and Slim 4.
 
 Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a Python/FastAPI app - into a lightweight PHP implementation.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><strong>Search</strong><br><img src="docs/screenshots/search.png" alt="Search results" width="400"></td>
+    <td><strong>Library</strong><br><img src="docs/screenshots/library.png" alt="Music library" width="400"></td>
+  </tr>
+  <tr>
+    <td><strong>Settings</strong><br><img src="docs/screenshots/settings.png" alt="Settings page" width="400"></td>
+    <td><strong>System Info</strong><br><img src="docs/screenshots/system-info.png" alt="System information" width="400"></td>
+  </tr>
+</table>
+
 ## Features
 
 - **🎵 Monochrome/Tidal** - Lossless FLAC downloads from Tidal CDN (no account needed)
@@ -84,8 +97,10 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed shared hosting and production de
 
 Settings are stored in SQLite and can be managed via the Settings page:
 
-- **Convert to FLAC** - Auto-convert downloads to FLAC format
-- **Organize by Artist** - Create artist subdirectories
+- **Organize by Artist** - Create artist subdirectories in your music folder
+- **Convert to FLAC** - Convert YouTube/SoundCloud downloads to FLAC (only shown when yt-dlp is available; Monochrome/Tidal downloads are always lossless FLAC)
+- **MusicBrainz Lookup** - Enrich metadata with artist, album, and year information
+- **YouTube Search** - Enable/disable YouTube as a search source
 - **Theme** - Dark or light mode
 
 ## Usage
