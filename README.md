@@ -30,6 +30,19 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 - **Audio**: Pure PHP FLAC handling (no ffmpeg required for core features)
 - **CSS**: Custom dark theme (Spotify-inspired)
 
+## Automatic Environment Detection
+
+EZ-MU automatically detects available system capabilities and adjusts features accordingly:
+
+| Tool | Feature | Shared Hosting Fallback |
+|------|---------|------------------------|
+| `yt-dlp` | YouTube/SoundCloud search & download | Monochrome/Tidal only |
+| `ffmpeg` | Audio format conversion | Direct FLAC download |
+| `fpcalc` | Audio fingerprinting (AcoustID) | Text-based MusicBrainz lookup |
+| `metaflac` | FLAC metadata writing | Pure PHP FlacWriter |
+
+Check **Settings → System Information** to see detected capabilities and current mode.
+
 ## Requirements
 
 ### Minimum (Shared Hosting)

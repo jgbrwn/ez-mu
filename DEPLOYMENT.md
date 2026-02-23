@@ -38,15 +38,18 @@ All of the above, plus:
 
 ### What Works on Shared Hosting
 
+EZ-MU **automatically detects** available capabilities and adjusts features accordingly.
+No configuration needed - unavailable features are gracefully hidden from the UI.
+
 ✅ **Monochrome/Tidal Downloads** - Lossless FLAC from Tidal CDN  
 ✅ **Playlist Import** - Spotify, Apple Music, Tidal playlists  
 ✅ **MusicBrainz Lookups** - Text-based metadata enrichment  
 ✅ **Library Management** - Browse, play, download tracks  
 ✅ **FLAC Tagging** - Pure PHP implementation (no external tools)
 
-❌ **YouTube Downloads** - Requires yt-dlp  
-❌ **SoundCloud Downloads** - Requires yt-dlp  
-❌ **Audio Fingerprinting** - Requires fpcalc  
+❌ **YouTube Downloads** - Requires yt-dlp (auto-disabled if not found)  
+❌ **SoundCloud Downloads** - Requires yt-dlp (auto-disabled if not found)  
+❌ **Audio Fingerprinting** - Requires fpcalc (falls back to text search)  
 
 ### Step-by-Step Instructions
 
@@ -316,6 +319,43 @@ The SQLite database is stored at `data/ez-mu.db`. To backup:
 
 ```bash
 cp data/ez-mu.db data/ez-mu.db.backup
+```
+
+### Automatic Capability Detection
+
+EZ-MU automatically detects available tools and adjusts features accordingly.
+No manual configuration needed - it just works with whatever is available.
+
+**How it works:**
+
+1. On startup, the `Environment` service scans for available binaries
+2. Features requiring unavailable tools are gracefully disabled
+3. Pure PHP fallbacks are used where possible (e.g., FLAC metadata writing)
+
+**Check current status:**
+
+Go to **Settings → System Information** to see:
+- Current mode ("Full Features" or "Shared Hosting (Limited)")
+- Available search sources
+- Feature availability matrix
+- Detected binary paths
+
+**Binary search locations:**
+
+```
+~/.local/bin/          # User installs (yt-dlp recommended location)
+~/bin/                 # User binaries
+/usr/bin/              # System binaries
+/usr/local/bin/        # Local installs
+<project>/bin/         # Bundled binaries (for shared hosting)
+```
+
+**Override paths via environment:**
+
+```bash
+export YT_DLP_PATH=/custom/path/to/yt-dlp
+export FFMPEG_PATH=/custom/path/to/ffmpeg
+export FPCALC_PATH=/custom/path/to/fpcalc
 ```
 
 ---
