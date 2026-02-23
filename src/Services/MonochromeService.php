@@ -11,7 +11,8 @@ use Exception;
  */
 class MonochromeService
 {
-    private const API_URL = 'https://api.monochrome.tf';
+    private const DEFAULT_API_URL = 'https://triton.squid.wtf';
+    private string $apiUrl;
     private const COVER_BASE = 'https://resources.tidal.com/images';
     private const TIMEOUT = 15;
 
@@ -20,6 +21,8 @@ class MonochromeService
     public function __construct(RateLimiter $rateLimiter)
     {
         $this->rateLimiter = $rateLimiter;
+        // Allow overriding API URL via environment variable
+        $this->apiUrl = $_ENV['MONOCHROME_API_URL'] ?? self::DEFAULT_API_URL;
     }
 
     /**
@@ -37,7 +40,7 @@ class MonochromeService
         $this->rateLimiter->wait('monochrome', 10, 60);
 
         try {
-            $url = self::API_URL . '/search/?' . http_build_query(['s' => $query]);
+            $url = $this->apiUrl . '/search/?' . http_build_query(['s' => $query]);
             $http = $this->httpGet($url);
             
             // cURL error
@@ -117,7 +120,7 @@ class MonochromeService
         $this->rateLimiter->wait('monochrome', 10, 60);
 
         try {
-            $url = self::API_URL . '/info/?' . http_build_query(['id' => $trackId]);
+            $url = $this->apiUrl . '/info/?' . http_build_query(['id' => $trackId]);
             $http = $this->httpGet($url);
             
             if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
@@ -147,7 +150,7 @@ class MonochromeService
 
         foreach ($qualities as $q) {
             try {
-                $url = self::API_URL . '/track/?' . http_build_query(['id' => $trackId, 'quality' => $q]);
+                $url = $this->apiUrl . '/track/?' . http_build_query(['id' => $trackId, 'quality' => $q]);
                 $http = $this->httpGet($url);
                 
                 if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
