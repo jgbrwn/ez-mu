@@ -67,9 +67,24 @@
                     <span class="toggle-slider"></span>
                 </div>
             </label>
+            {% if environment.features['YouTube Downloads'] or environment.features['SoundCloud Downloads'] %}
+            <label class="settings-label">
+                <div>
+                    <span>Convert to FLAC</span>
+                    <div style="font-size: 11px; color: var(--text-secondary);">YouTube/SoundCloud only</div>
+                </div>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="convert_to_flac" value="1" {% if settings.convert_to_flac != '0' %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+            {% endif %}
         </div>
         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px;">
-            All downloads from Monochrome/Tidal are lossless FLAC (16-bit/44.1kHz, ~1411 kbps).
+            Monochrome/Tidal downloads are always lossless FLAC (16-bit/44.1kHz).
+            {% if environment.features['YouTube Downloads'] or environment.features['SoundCloud Downloads'] %}
+            <br>YouTube/SoundCloud downloads {{ settings.convert_to_flac != '0' ? 'will be converted to FLAC' : 'keep original format' }}.
+            {% endif %}
         </div>
     </div>
 

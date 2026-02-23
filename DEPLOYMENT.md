@@ -593,8 +593,8 @@ export FPCALC_PATH=/usr/bin/fpcalc
 
 Settings are stored in SQLite and managed via the web interface:
 
-- **Convert to FLAC** - Auto-convert downloads
 - **Organize by Artist** - Create artist subdirectories  
+- **Convert to FLAC** - Convert YouTube/SoundCloud downloads to FLAC (only shown when yt-dlp available)
 - **MusicBrainz Lookup** - Enrich metadata from MusicBrainz
 - **YouTube** - Enable/disable YouTube search (requires yt-dlp)
 
