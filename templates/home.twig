@@ -1,0 +1,51 @@
+{% extends 'base.twig' %}
+
+{% block content %}
+<div class="search-box">
+    <form hx-post="/search" hx-target="#results" hx-indicator="#searchSpinner">
+        <input
+            type="text"
+            class="search-input"
+            id="searchInput"
+            name="query"
+            placeholder="Search for music..."
+            autocomplete="off"
+            autocapitalize="off"
+        >
+        <button type="submit" class="search-btn">Search</button>
+    </form>
+</div>
+
+<div class="tabs">
+    <a href="/" class="tab active">Search</a>
+    <a href="/library" class="tab">Library <span style="opacity: 0.6;">({{ library_stats.track_count }})</span></a>
+    <a href="/queue" class="tab">Queue <span style="opacity: 0.6;">({{ queue_stats.queued + queue_stats.processing }})</span></a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div id="searchSpinner" class="loading htmx-indicator">
+    <div class="spinner"></div>
+</div>
+
+<div id="results" class="results">
+    <div class="empty-state">
+        <div class="empty-state-icon">🎵</div>
+        <p>Search for music to get started</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-focus search input
+    document.getElementById('searchInput').focus();
+
+    // Handle enter key
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            htmx.trigger(this.closest('form'), 'submit');
+        }
+    });
+</script>
+{% endblock %}

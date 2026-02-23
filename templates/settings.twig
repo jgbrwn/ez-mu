@@ -1,0 +1,52 @@
+{% extends 'base.twig' %}
+
+{% block title %}Settings - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab">Library</a>
+    <a href="/queue" class="tab">Queue</a>
+    <a href="/settings" class="tab active">Settings</a>
+</div>
+
+<form hx-post="/settings" hx-target="#save-result" hx-swap="innerHTML">
+    <div class="settings-section">
+        <div class="settings-section-title">General</div>
+        <div class="settings-grid">
+            <label class="settings-label">
+                <span>Convert to FLAC</span>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="convert_to_flac" value="1" {% if settings.convert_to_flac == '1' %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+            <label class="settings-label">
+                <span>Organize by Artist</span>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="organize_by_artist" value="1" {% if settings.organize_by_artist == '1' %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Appearance</div>
+        <div class="settings-grid">
+            <label class="settings-label">
+                <span>Theme</span>
+                <select name="theme" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                    <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Dark</option>
+                    <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Light</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
+    <div class="settings-actions">
+        <button type="submit" class="save-btn">Save Settings</button>
+        <div id="save-result" class="save-result"></div>
+    </div>
+</form>
+{% endblock %}

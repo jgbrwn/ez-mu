@@ -1,0 +1,42 @@
+{% if tracks is empty %}
+<div class="empty-state">
+    <div class="empty-state-icon">📚</div>
+    <p>Your library is empty</p>
+    <p style="font-size: 13px; margin-top: 8px;">Search and download music to build your collection</p>
+</div>
+{% else %}
+{% for track in tracks %}
+<div class="result-item track-item">
+    <input type="checkbox" class="track-checkbox" name="tracks[]" value="{{ track.id }}">
+    <button class="track-play-btn" data-id="{{ track.id }}" onclick="playTrack('{{ track.id }}', '{{ track.title|e('js') }}', '{{ track.artist|e('js') }}', '{{ track.thumbnail }}')">
+        ▶
+    </button>
+    <img class="result-thumb" src="{{ track.thumbnail|default('/static/placeholder.png') }}" alt="" loading="lazy" style="width: 48px; height: 48px;">
+    <div class="result-info" style="flex: 1;">
+        <div class="result-title">{{ track.title }}</div>
+        <div class="result-meta">
+            {{ track.artist }}
+            {% if track.duration %}
+            • {{ (track.duration / 60)|number_format(0) }}:{{ '%02d'|format(track.duration % 60) }}
+            {% endif %}
+        </div>
+        <div class="result-badges">
+            <span class="source-badge {{ track.source|default('unknown') }}">{{ track.codec|upper }}</span>
+            {% if track.bitrate %}
+            <span style="font-size: 11px; color: var(--text-secondary);">{{ track.bitrate }} kbps</span>
+            {% endif %}
+        </div>
+    </div>
+    <button 
+        class="clear-btn" 
+        style="padding: 6px 12px; font-size: 12px;"
+        hx-delete="/library/{{ track.id }}"
+        hx-target="closest .result-item"
+        hx-swap="outerHTML"
+        hx-confirm="Delete '{{ track.title }}'?"
+    >
+        🗑
+    </button>
+</div>
+{% endfor %}
+{% endif %}

@@ -1,0 +1,196 @@
+{% extends 'base.twig' %}
+
+{% block title %}Library - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab active">Library <span style="opacity: 0.6;">({{ stats.track_count }})</span></a>
+    <a href="/queue" class="tab">Queue</a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div class="search-box" style="margin-bottom: 16px;">
+    <form hx-get="/partials/library" hx-target="#library-list" hx-trigger="input changed delay:300ms from:#librarySearch, submit">
+        <input
+            type="text"
+            class="search-input"
+            id="librarySearch"
+            name="q"
+            placeholder="Search your library..."
+            value="{{ query }}"
+            autocomplete="off"
+            style="padding-right: 20px;"
+        >
+    </form>
+</div>
+
+<div class="queue-header">
+    <h2 style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+        {{ stats.track_count }} tracks • {{ (stats.total_size / 1048576)|number_format(1) }} MB
+    </h2>
+    <div style="display: flex; gap: 8px;">
+        <button id="selectAllBtn" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" onclick="toggleSelectAll()">
+            Select All
+        </button>
+        <form id="downloadForm" action="/library/download" method="POST">
+            <button type="submit" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" id="downloadSelectedBtn" disabled>
+                ⬇ Download Selected
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Audio Player -->
+<div id="player" class="player-container" style="display: none;">
+    <div class="player-info">
+        <img id="playerThumb" class="player-thumb" src="" alt="">
+        <div class="player-meta">
+            <div id="playerTitle" class="player-title">-</div>
+            <div id="playerArtist" class="player-artist">-</div>
+        </div>
+    </div>
+    <audio id="audioPlayer" controls style="width: 100%;"></audio>
+</div>
+
+<div id="library-list" class="results">
+    {% include 'partials/library_list.twig' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.player-container {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    padding: 12px;
+    margin-top: 16px;
+    z-index: 100;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.player-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--bg-tertiary);
+}
+
+.player-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.player-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.track-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.track-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.track-play-btn {
+    background: var(--accent);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.track-play-btn:hover {
+    opacity: 0.9;
+}
+</style>
+
+<script>
+const audioPlayer = document.getElementById('audioPlayer');
+const playerContainer = document.getElementById('player');
+let currentTrackId = null;
+
+function playTrack(id, title, artist, thumbnail) {
+    currentTrackId = id;
+    audioPlayer.src = '/stream/' + id;
+    document.getElementById('playerTitle').textContent = title;
+    document.getElementById('playerArtist').textContent = artist;
+    document.getElementById('playerThumb').src = thumbnail || '/static/placeholder.png';
+    playerContainer.style.display = 'block';
+    audioPlayer.play();
+    
+    // Update play buttons
+    document.querySelectorAll('.track-play-btn').forEach(btn => {
+        btn.textContent = btn.dataset.id === id ? '⏸' : '▶';
+    });
+}
+
+audioPlayer.addEventListener('ended', function() {
+    // Could implement playlist functionality here
+});
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.track-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    updateDownloadButton();
+}
+
+function updateDownloadButton() {
+    const checked = document.querySelectorAll('.track-checkbox:checked');
+    const btn = document.getElementById('downloadSelectedBtn');
+    btn.disabled = checked.length === 0;
+    btn.textContent = checked.length > 0 
+        ? `⬇ Download (${checked.length})`
+        : '⬇ Download Selected';
+    
+    // Update form with selected IDs
+    const form = document.getElementById('downloadForm');
+    form.querySelectorAll('input[name="tracks[]"]').forEach(el => el.remove());
+    checked.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'tracks[]';
+        input.value = cb.value;
+        form.appendChild(input);
+    });
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('track-checkbox')) {
+        updateDownloadButton();
+    }
+});
+</script>
+{% endblock %}

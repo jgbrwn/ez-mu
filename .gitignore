@@ -1,0 +1,5 @@
+vendor/
+data/*.db
+var/
+music/*
+!music/.gitkeep

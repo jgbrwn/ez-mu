@@ -1,0 +1,11 @@
+<div class="result-item {% if status == 'queued' %}downloading{% endif %}" style="opacity: 0.7;">
+    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+        {% if status == 'queued' %}
+        <div class="job-status downloading"></div>
+        <span style="color: var(--accent);">{{ message }}</span>
+        {% elseif status == 'error' %}
+        <div class="job-status failed"></div>
+        <span style="color: var(--error);">{{ message }}</span>
+        {% endif %}
+    </div>
+</div>

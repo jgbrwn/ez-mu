@@ -1,0 +1,54 @@
+{% if error %}
+<div class="empty-state">
+    <div class="empty-state-icon">⚠️</div>
+    <p style="color: var(--error);">{{ error }}</p>
+</div>
+{% elseif results is empty %}
+<div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <p>{{ message|default('No results found') }}</p>
+</div>
+{% else %}
+{% for result in results %}
+<form class="result-item" 
+      hx-post="/download" 
+      hx-swap="outerHTML" 
+      hx-target="this"
+      style="cursor: pointer;"
+      data-tooltip="Click to download">
+    <input type="hidden" name="video_id" value="{{ result.video_id }}">
+    <input type="hidden" name="source" value="{{ result.source }}">
+    <input type="hidden" name="title" value="{{ result.title|e('html_attr') }}">
+    <input type="hidden" name="artist" value="{{ result.artist|e('html_attr') }}">
+    <input type="hidden" name="url" value="{{ result.url }}">
+    <input type="hidden" name="thumbnail" value="{{ result.thumbnail }}">
+    <input type="hidden" name="convert_to_flac" value="1">
+    
+    <img class="result-thumb" src="{{ result.thumbnail|default('/static/placeholder.svg') }}" alt="" loading="lazy">
+    <div class="result-info">
+        <div class="result-title">{{ result.title }}</div>
+        <div class="result-meta">{{ result.artist }}</div>
+        <div class="result-badges">
+            <span class="source-badge {{ result.source }}">{{ result.source|upper }}</span>
+            <span class="result-duration">{{ result.duration_string }}</span>
+        </div>
+    </div>
+    <button type="submit" class="download-btn" style="
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--accent);
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #000;
+    ">
+        ⬇ Download
+    </button>
+</form>
+{% endfor %}
+{% endif %}

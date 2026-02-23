@@ -1,0 +1,42 @@
+<div class="job-item">
+    <div class="job-status {{ job.status }}"></div>
+    <div class="job-info">
+        <div class="job-title">{{ job.title }}</div>
+        <div class="job-meta">
+            {{ job.artist }}
+            {% if job.source %}
+            • <span class="source-badge {{ job.source }}" style="font-size: 9px;">{{ job.source|upper }}</span>
+            {% endif %}
+        </div>
+        {% if job.error %}
+        <div class="job-error">{{ job.error }}</div>
+        {% endif %}
+        {% if job.status == 'completed' and job.codec %}
+        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+            {{ job.codec|upper }} • {{ job.bitrate }} kbps
+        </div>
+        {% endif %}
+    </div>
+    <div style="display: flex; gap: 6px;">
+        {% if job.status == 'failed' %}
+        <button 
+            class="clear-btn" 
+            style="padding: 6px 12px; font-size: 12px; color: var(--accent); border-color: var(--accent);"
+            hx-post="/queue/{{ job.id }}/retry"
+            hx-target="closest .job-item"
+            hx-swap="outerHTML"
+        >
+            Retry
+        </button>
+        {% endif %}
+        <button 
+            class="clear-btn" 
+            style="padding: 6px 12px; font-size: 12px;"
+            hx-delete="/queue/{{ job.id }}"
+            hx-target="closest .job-item"
+            hx-swap="outerHTML"
+        >
+            ×
+        </button>
+    </div>
+</div>

@@ -1,0 +1,10 @@
+{% if jobs is empty %}
+<div class="empty-state">
+    <div class="empty-state-icon">📥</div>
+    <p>No jobs in queue</p>
+</div>
+{% else %}
+{% for job in jobs %}
+{% include 'partials/queue_item.twig' with {'job': job} %}
+{% endfor %}
+{% endif %}

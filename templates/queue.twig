@@ -1,0 +1,47 @@
+{% extends 'base.twig' %}
+
+{% block title %}Queue - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab">Library</a>
+    <a href="/queue" class="tab active">Queue <span style="opacity: 0.6;">({{ stats.queued + stats.processing }})</span></a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div class="queue-header">
+    <h2 style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+        {{ stats.queued }} queued • {{ stats.processing }} processing • {{ stats.completed }} completed • {{ stats.failed }} failed
+    </h2>
+    <form hx-post="/queue/clear" hx-target="#queue-list" hx-swap="innerHTML">
+        <button type="submit" class="clear-btn">Clear Completed</button>
+    </form>
+</div>
+
+<div id="queue-list" class="results" hx-get="/partials/queue" hx-trigger="every 3s" hx-swap="innerHTML">
+    {% include 'partials/queue_list.twig' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Process queue in background
+function processQueue() {
+    fetch('/download/process', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== 'idle') {
+                // Keep processing
+                setTimeout(processQueue, 1000);
+            } else {
+                // Check again in 5 seconds
+                setTimeout(processQueue, 5000);
+            }
+        })
+        .catch(() => setTimeout(processQueue, 5000));
+}
+
+processQueue();
+</script>
+{% endblock %}
