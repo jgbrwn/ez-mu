@@ -21,9 +21,6 @@ class SettingsController
         $this->appSettings = $container->get('settings');
     }
 
-    /**
-     * Settings page
-     */
     public function index(Request $request, Response $response): Response
     {
         $settings = $this->settings->getAll();
@@ -33,15 +30,11 @@ class SettingsController
         ]);
     }
 
-    /**
-     * Save settings
-     */
     public function save(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();
         
-        // Update settings
-        $allowedSettings = ['convert_to_flac', 'organize_by_artist', 'theme'];
+        $allowedSettings = ['convert_to_flac', 'organize_by_artist', 'theme', 'youtube_enabled'];
         $updates = [];
         
         foreach ($allowedSettings as $key) {
@@ -50,8 +43,8 @@ class SettingsController
             }
         }
 
-        // Handle checkboxes (not sent when unchecked)
-        foreach (['convert_to_flac', 'organize_by_artist'] as $checkbox) {
+        // Handle checkboxes
+        foreach (['convert_to_flac', 'organize_by_artist', 'youtube_enabled'] as $checkbox) {
             if (!isset($data[$checkbox])) {
                 $updates[$checkbox] = '0';
             }
@@ -59,15 +52,19 @@ class SettingsController
 
         $this->settings->updateAll($updates);
 
-        // Return success partial
+        // Handle YouTube cookies upload
+        if (!empty($data['youtube_cookies'])) {
+            $cookiesContent = trim($data['youtube_cookies']);
+            if (!empty($cookiesContent)) {
+                $this->settings->saveYouTubeCookies($cookiesContent);
+            }
+        }
+
         return $this->twig->render($response, 'partials/settings_saved.twig', [
             'message' => 'Settings saved successfully',
         ]);
     }
 
-    /**
-     * Get config (JSON)
-     */
     public function config(Request $request, Response $response): Response
     {
         $config = [

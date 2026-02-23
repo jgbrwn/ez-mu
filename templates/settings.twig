@@ -12,7 +12,53 @@
 
 <form hx-post="/settings" hx-target="#save-result" hx-swap="innerHTML">
     <div class="settings-section">
-        <div class="settings-section-title">General</div>
+        <div class="settings-section-title">Search Sources</div>
+        <div class="settings-grid">
+            <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 12px;">
+                <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 8px;">
+                    <strong>🎵 Monochrome/Tidal</strong> - Primary (Lossless FLAC)
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Always enabled. Provides genuine lossless audio directly from Tidal CDN.
+                </div>
+            </div>
+            <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 12px;">
+                <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 8px;">
+                    <strong>🔊 SoundCloud</strong> - Secondary
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Always enabled. Fills gaps for tracks not on Tidal.
+                </div>
+            </div>
+            <label class="settings-label">
+                <div>
+                    <span>📺 YouTube</span>
+                    <div style="font-size: 11px; color: var(--text-secondary);">Requires cookies for most videos</div>
+                </div>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="youtube_enabled" value="1" {% if settings.youtube_enabled == '1' %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="settings-section" id="youtube-cookies-section" style="{% if settings.youtube_enabled != '1' %}opacity: 0.5;{% endif %}">
+        <div class="settings-section-title">YouTube Cookies</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+            YouTube requires authentication for most videos. Export cookies from your browser using an extension like "Get cookies.txt LOCALLY".
+        </div>
+        <div class="settings-row">
+            <label>Paste cookies.txt content:</label>
+            <textarea name="youtube_cookies" rows="4" placeholder="# Netscape HTTP Cookie File..." style="font-family: monospace; font-size: 11px;">{{ settings.youtube_cookies_content|default('') }}</textarea>
+        </div>
+        {% if settings.youtube_cookies_path %}
+        <div style="font-size: 11px; color: var(--accent); margin-top: 8px;">✓ Cookies configured</div>
+        {% endif %}
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-section-title">Downloads</div>
         <div class="settings-grid">
             <label class="settings-label">
                 <span>Convert to FLAC</span>
@@ -49,4 +95,11 @@
         <div id="save-result" class="save-result"></div>
     </div>
 </form>
+
+<script>
+// Toggle YouTube cookies section visibility
+document.querySelector('input[name="youtube_enabled"]').addEventListener('change', function() {
+    document.getElementById('youtube-cookies-section').style.opacity = this.checked ? '1' : '0.5';
+});
+</script>
 {% endblock %}

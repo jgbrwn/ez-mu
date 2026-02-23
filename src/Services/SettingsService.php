@@ -10,6 +10,8 @@ class SettingsService
         'convert_to_flac' => '1',
         'organize_by_artist' => '1',
         'theme' => 'dark',
+        'youtube_enabled' => '0',
+        'youtube_cookies_path' => '',
     ];
 
     public function __construct(Database $db)
@@ -17,9 +19,6 @@ class SettingsService
         $this->db = $db;
     }
 
-    /**
-     * Get a setting value
-     */
     public function get(string $key, ?string $default = null): ?string
     {
         $result = $this->db->queryOne('SELECT value FROM settings WHERE key = ?', [$key]);
@@ -31,9 +30,6 @@ class SettingsService
         return $default ?? ($this->defaults[$key] ?? null);
     }
 
-    /**
-     * Get a boolean setting
-     */
     public function getBool(string $key, bool $default = false): bool
     {
         $value = $this->get($key);
@@ -43,9 +39,6 @@ class SettingsService
         return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
     }
 
-    /**
-     * Set a setting value
-     */
     public function set(string $key, string $value): void
     {
         $this->db->execute(
@@ -54,9 +47,6 @@ class SettingsService
         );
     }
 
-    /**
-     * Get all settings
-     */
     public function getAll(): array
     {
         $settings = $this->defaults;
@@ -69,13 +59,24 @@ class SettingsService
         return $settings;
     }
 
-    /**
-     * Update multiple settings
-     */
     public function updateAll(array $settings): void
     {
         foreach ($settings as $key => $value) {
             $this->set($key, (string)$value);
         }
+    }
+
+    /**
+     * Save YouTube cookies content
+     */
+    public function saveYouTubeCookies(string $cookiesContent): string
+    {
+        $dataDir = dirname($this->db->getPdo()->query("PRAGMA database_list")->fetchColumn(2));
+        $cookiesPath = $dataDir . '/youtube_cookies.txt';
+        
+        file_put_contents($cookiesPath, $cookiesContent);
+        $this->set('youtube_cookies_path', $cookiesPath);
+        
+        return $cookiesPath;
     }
 }

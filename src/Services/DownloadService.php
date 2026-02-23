@@ -7,12 +7,21 @@ use Exception;
 class DownloadService
 {
     private Database $db;
+    private MonochromeService $monochrome;
+    private RateLimiter $rateLimiter;
     private string $musicDir;
     private string $singlesDir;
 
-    public function __construct(Database $db, string $musicDir, string $singlesDir)
-    {
+    public function __construct(
+        Database $db,
+        MonochromeService $monochrome,
+        RateLimiter $rateLimiter,
+        string $musicDir,
+        string $singlesDir
+    ) {
         $this->db = $db;
+        $this->monochrome = $monochrome;
+        $this->rateLimiter = $rateLimiter;
         $this->musicDir = $musicDir;
         $this->singlesDir = $singlesDir;
     }
@@ -30,7 +39,7 @@ class DownloadService
             [
                 $id,
                 $data['video_id'] ?? '',
-                $data['source'] ?? 'youtube',
+                $data['source'] ?? 'monochrome',
                 $data['title'] ?? 'Unknown',
                 $data['artist'] ?? 'Unknown',
                 $data['url'] ?? '',
@@ -54,16 +63,20 @@ class DownloadService
             throw new Exception("Job not found: {$jobId}");
         }
 
-        // Update status to processing
         $this->db->execute(
             "UPDATE jobs SET status = 'processing', started_at = datetime('now') WHERE id = ?",
             [$jobId]
         );
 
         try {
-            $result = $this->downloadWithYtDlp($job);
+            $source = $job['source'] ?? 'youtube';
             
-            // Update job with success
+            if ($source === 'monochrome') {
+                $result = $this->downloadFromMonochrome($job);
+            } else {
+                $result = $this->downloadWithYtDlp($job);
+            }
+            
             $this->db->execute(
                 "UPDATE jobs SET 
                     status = 'completed', 
@@ -82,9 +95,7 @@ class DownloadService
                 ]
             );
 
-            // Add to library
             $this->addToLibrary($job, $result);
-
             return true;
 
         } catch (Exception $e) {
@@ -96,6 +107,44 @@ class DownloadService
         }
     }
 
+    /**
+     * Download from Monochrome/Tidal (lossless FLAC)
+     */
+    private function downloadFromMonochrome(array $job): array
+    {
+        $trackId = $job['video_id'];
+        
+        $info = $this->monochrome->getTrackInfo($trackId);
+        if (!$info) {
+            throw new Exception("Failed to get track info for {$trackId}");
+        }
+
+        $artist = $this->sanitizeFilename($info['artist']['name'] ?? $job['artist'] ?? 'Unknown');
+        $title = $this->sanitizeFilename($info['title'] ?? $job['title'] ?? 'Unknown');
+        $album = $info['album']['title'] ?? 'Singles';
+        $coverUuid = $info['album']['cover'] ?? '';
+
+        $outputDir = $this->musicDir . '/' . $this->singlesDir . '/' . $artist;
+        if (!is_dir($outputDir)) {
+            mkdir($outputDir, 0755, true);
+        }
+
+        $outputPath = $outputDir . '/' . $title . '.flac';
+        
+        $result = $this->monochrome->downloadTrack($trackId, $outputPath);
+        
+        return [
+            'file_path' => $outputPath,
+            'codec' => 'flac',
+            'bitrate' => $result['bitrate'] ?? 1411,
+            'duration' => $result['duration'] ?? 0,
+            'artist' => $result['artist'] ?? $artist,
+            'title' => $result['title'] ?? $title,
+            'album' => $result['album'] ?? $album,
+            'thumbnail' => $result['thumbnail'] ?? $this->monochrome->getCoverUrl($coverUuid),
+        ];
+    }
+
     private function getYtDlpPath(): string
     {
         $userPath = getenv('HOME') . '/.local/bin/yt-dlp';
@@ -103,10 +152,19 @@ class DownloadService
     }
 
     /**
-     * Download using yt-dlp
+     * Download using yt-dlp (YouTube/SoundCloud)
      */
     private function downloadWithYtDlp(array $job): array
     {
+        $source = $job['source'] ?? 'youtube';
+        
+        // Rate limit based on source
+        if ($source === 'youtube') {
+            $this->rateLimiter->wait('youtube', 10, 60);
+        } else {
+            $this->rateLimiter->wait('soundcloud', 10, 60);
+        }
+
         $outputDir = $this->musicDir . '/' . $this->singlesDir;
         if (!is_dir($outputDir)) {
             mkdir($outputDir, 0755, true);
@@ -115,7 +173,6 @@ class DownloadService
         $artist = $this->sanitizeFilename($job['artist'] ?? 'Unknown');
         $title = $this->sanitizeFilename($job['title'] ?? 'Unknown');
         
-        // Create artist subdirectory
         $artistDir = $outputDir . '/' . $artist;
         if (!is_dir($artistDir)) {
             mkdir($artistDir, 0755, true);
@@ -124,10 +181,9 @@ class DownloadService
         $outputTemplate = $artistDir . '/' . $title;
         $convertToFlac = (bool)($job['convert_to_flac'] ?? true);
 
-        // Determine URL to download
         $url = $job['url'] ?? '';
         if (empty($url) && !empty($job['video_id'])) {
-            if ($job['source'] === 'youtube') {
+            if ($source === 'youtube') {
                 $url = 'https://www.youtube.com/watch?v=' . $job['video_id'];
             }
         }
@@ -136,11 +192,10 @@ class DownloadService
             throw new Exception('No URL to download');
         }
 
-        // Build yt-dlp command
         $cmd = [
             $this->getYtDlpPath(),
-            '-x',  // Extract audio
-            '--audio-quality', '0',  // Best quality
+            '-x',
+            '--audio-quality', '0',
             '--embed-thumbnail',
             '--embed-metadata',
             '--no-playlist',
@@ -157,7 +212,6 @@ class DownloadService
 
         $cmd[] = $url;
 
-        // Execute download
         $process = proc_open(
             $cmd,
             [
@@ -183,7 +237,6 @@ class DownloadService
             throw new Exception('Download failed: ' . $stderr);
         }
 
-        // Find the downloaded file
         $extension = $convertToFlac ? 'flac' : '*';
         $pattern = $artistDir . '/' . $title . '.*';
         $files = glob($pattern);
@@ -203,35 +256,30 @@ class DownloadService
         ];
     }
 
-    /**
-     * Add downloaded track to library
-     */
     private function addToLibrary(array $job, array $result): void
     {
         $id = $this->generateId();
         
         $this->db->execute(
-            'INSERT INTO library (id, job_id, title, artist, file_path, file_size, duration, codec, bitrate, thumbnail, source)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO library (id, job_id, title, artist, album, file_path, file_size, duration, codec, bitrate, thumbnail, source)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $id,
                 $job['id'],
-                $job['title'],
-                $job['artist'],
+                $result['title'] ?? $job['title'],
+                $result['artist'] ?? $job['artist'],
+                $result['album'] ?? 'Singles',
                 $result['file_path'],
-                filesize($result['file_path']),
-                $result['duration'],
-                $result['codec'],
-                $result['bitrate'],
-                $job['thumbnail'],
+                file_exists($result['file_path']) ? filesize($result['file_path']) : 0,
+                $result['duration'] ?? 0,
+                $result['codec'] ?? 'unknown',
+                $result['bitrate'] ?? 0,
+                $result['thumbnail'] ?? $job['thumbnail'],
                 $job['source'],
             ]
         );
     }
 
-    /**
-     * Get audio file information using ffprobe
-     */
     private function getAudioInfo(string $filePath): array
     {
         $cmd = [
@@ -243,15 +291,11 @@ class DownloadService
             $filePath
         ];
 
-        $process = proc_open(
-            $cmd,
-            [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes
-        );
+        $process = proc_open($cmd, [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes);
 
         if (!is_resource($process)) {
             return [];
@@ -286,8 +330,7 @@ class DownloadService
 
     private function sanitizeFilename(string $name): string
     {
-        // Remove or replace invalid characters
-        $name = preg_replace('/[\\\/:*?"<>|]/', '', $name);
+        $name = preg_replace('/[\\\\\/:*?"<>|]/', '', $name);
         $name = trim($name, '. ');
         return $name ?: 'Unknown';
     }
@@ -297,9 +340,6 @@ class DownloadService
         return bin2hex(random_bytes(8));
     }
 
-    /**
-     * Get pending jobs count
-     */
     public function getPendingCount(): int
     {
         $result = $this->db->queryOne(
@@ -308,9 +348,6 @@ class DownloadService
         return (int)($result['count'] ?? 0);
     }
 
-    /**
-     * Get next queued job
-     */
     public function getNextQueuedJob(): ?array
     {
         return $this->db->queryOne(

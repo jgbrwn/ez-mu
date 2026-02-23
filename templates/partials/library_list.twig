@@ -8,10 +8,15 @@
 {% for track in tracks %}
 <div class="result-item track-item">
     <input type="checkbox" class="track-checkbox" name="tracks[]" value="{{ track.id }}">
-    <button class="track-play-btn" data-id="{{ track.id }}" onclick="playTrack('{{ track.id }}', '{{ track.title|e('js') }}', '{{ track.artist|e('js') }}', '{{ track.thumbnail }}')">
+    <button type="button" class="track-play-btn" data-id="{{ track.id }}" onclick="playTrack('{{ track.id }}', '{{ track.title|e('js') }}', '{{ track.artist|e('js') }}', '{{ track.thumbnail|e('js') }}')">
         ▶
     </button>
-    <img class="result-thumb" src="{{ track.thumbnail|default('/static/placeholder.png') }}" alt="" loading="lazy" style="width: 48px; height: 48px;">
+    {% if track.thumbnail %}
+    <img class="result-thumb" src="{{ track.thumbnail }}" alt="" loading="lazy" style="width: 48px; height: 48px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;width:48px;height:48px;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:18px;">🎵</div>
+    {% else %}
+    <div class="result-thumb" style="width:48px;height:48px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:18px;">🎵</div>
+    {% endif %}
     <div class="result-info" style="flex: 1;">
         <div class="result-title">{{ track.title }}</div>
         <div class="result-meta">
@@ -21,13 +26,17 @@
             {% endif %}
         </div>
         <div class="result-badges">
-            <span class="source-badge {{ track.source|default('unknown') }}">{{ track.codec|upper }}</span>
+            {% if track.source %}
+            <span class="source-badge {{ track.source }}">{{ track.source|upper }}</span>
+            {% endif %}
+            <span class="source-badge" style="background: var(--bg-tertiary); color: var(--text-secondary);">{{ track.codec|upper }}</span>
             {% if track.bitrate %}
             <span style="font-size: 11px; color: var(--text-secondary);">{{ track.bitrate }} kbps</span>
             {% endif %}
         </div>
     </div>
     <button 
+        type="button"
         class="clear-btn" 
         style="padding: 6px 12px; font-size: 12px;"
         hx-delete="/library/{{ track.id }}"
