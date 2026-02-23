@@ -45,8 +45,16 @@ class StreamController
             return $this->handleRangeRequest($response, $filePath, $fileSize, $mimeType, $range);
         }
 
-        // Full file response
-        $stream = fopen($filePath, 'r');
+        // Full file response - use chunked streaming for large files
+        // Disable output buffering for better memory efficiency
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Prevent timeout for large files
+        set_time_limit(0);
+        
+        $stream = fopen($filePath, 'rb');
         
         return $response
             ->withHeader('Content-Type', $mimeType)
@@ -80,7 +88,14 @@ class StreamController
 
         $length = $end - $start + 1;
 
-        $stream = fopen($filePath, 'r');
+        // Disable output buffering for streaming
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        set_time_limit(0);
+        
+        $stream = fopen($filePath, 'rb');
         fseek($stream, $start);
 
         return $response

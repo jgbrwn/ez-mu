@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\MusicLibrary;
 use App\Services\SettingsService;
+use App\Services\FileStreamer;
 
 class LibraryController
 {
@@ -110,33 +111,31 @@ class LibraryController
             if ($track && file_exists($track['file_path'])) {
                 $filename = $track['artist'] . ' - ' . $track['title'] . '.' . pathinfo($track['file_path'], PATHINFO_EXTENSION);
                 
-                return $response
-                    ->withHeader('Content-Type', 'application/octet-stream')
-                    ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                    ->withHeader('Content-Length', (string)filesize($track['file_path']))
-                    ->withBody(new \Slim\Psr7\Stream(fopen($track['file_path'], 'r')));
+                // Use chunked streaming for large FLAC files
+                FileStreamer::streamFile(
+                    $response,
+                    $track['file_path'],
+                    $filename,
+                    'audio/flac',
+                    false // Don't delete the original file
+                );
+                // streamFile exits, so this won't be reached
+                return $response;
             }
         }
 
         try {
             $zipPath = $this->library->createZip($trackIds);
             
-            $response = $response
-                ->withHeader('Content-Type', 'application/zip')
-                ->withHeader('Content-Disposition', 'attachment; filename="ez-mu-download.zip"')
-                ->withHeader('Content-Length', (string)filesize($zipPath));
-
-            // Stream the zip file
-            $stream = fopen($zipPath, 'r');
-            $response = $response->withBody(new \Slim\Psr7\Stream($stream));
-
-            // Clean up temp file after sending (register shutdown function)
-            register_shutdown_function(function () use ($zipPath) {
-                if (file_exists($zipPath)) {
-                    unlink($zipPath);
-                }
-            });
-
+            // Use chunked streaming for zip files (shared hosting compatible)
+            FileStreamer::streamFile(
+                $response,
+                $zipPath,
+                'ez-mu-download.zip',
+                'application/zip',
+                true // Delete temp zip after streaming
+            );
+            // streamFile exits, so this won't be reached
             return $response;
         } catch (\Exception $e) {
             $response->getBody()->write('Failed to create download: ' . $e->getMessage());
