@@ -1,11 +1,31 @@
-<div class="result-item {% if status == 'queued' %}downloading{% endif %}" style="opacity: 0.7;">
+<div class="result-item {% if status == 'queued' %}downloading{% endif %} auto-fade" style="opacity: 0.7;">
     <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
         {% if status == 'queued' %}
         <div class="job-status downloading"></div>
         <span style="color: var(--accent);">{{ message }}</span>
+        {% elseif status == 'already_queued' %}
+        <div class="job-status queued" style="background: #eab308;"></div>
+        <span style="color: #eab308;">{{ message }}</span>
+        {% elseif status == 'already_downloaded' %}
+        <div class="job-status completed"></div>
+        <span style="color: var(--accent);">{{ message }} ✓</span>
         {% elseif status == 'error' %}
         <div class="job-status failed"></div>
         <span style="color: var(--error);">{{ message }}</span>
         {% endif %}
     </div>
 </div>
+<script>
+(function() {
+    const el = document.currentScript.previousElementSibling;
+    setTimeout(() => {
+        el.style.transition = 'opacity 0.5s, max-height 0.5s, margin 0.5s, padding 0.5s';
+        el.style.opacity = '0';
+        el.style.maxHeight = '0';
+        el.style.margin = '0';
+        el.style.padding = '0';
+        el.style.overflow = 'hidden';
+        setTimeout(() => el.remove(), 500);
+    }, 4000);
+})();
+</script>

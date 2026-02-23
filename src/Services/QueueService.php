@@ -117,4 +117,16 @@ class QueueService
             [$videoId]
         );
     }
+
+    /**
+     * Clear completed jobs older than X minutes
+     */
+    public function clearOldCompleted(int $minutes = 30): int
+    {
+        $cutoff = date('Y-m-d H:i:s', time() - ($minutes * 60));
+        return $this->db->execute(
+            "DELETE FROM jobs WHERE status = 'completed' AND updated_at < ?",
+            [$cutoff]
+        );
+    }
 }

@@ -6,16 +6,22 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\DownloadService;
+use App\Services\QueueService;
 
 class DownloadController
 {
     private Twig $twig;
     private DownloadService $downloadService;
+    private QueueService $queueService;
 
-    public function __construct(Twig $twig, DownloadService $downloadService)
-    {
+    public function __construct(
+        Twig $twig, 
+        DownloadService $downloadService,
+        QueueService $queueService
+    ) {
         $this->twig = $twig;
         $this->downloadService = $downloadService;
+        $this->queueService = $queueService;
     }
 
     /**
@@ -24,10 +30,22 @@ class DownloadController
     public function queue(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();
+        $videoId = $data['video_id'] ?? '';
+        
+        // Check if already queued/completed
+        if ($this->queueService->isAlreadyQueued($videoId)) {
+            $existing = $this->queueService->findByVideoId($videoId);
+            $status = $existing['status'] ?? 'queued';
+            
+            return $this->twig->render($response, 'partials/download_button.twig', [
+                'status' => $status === 'completed' ? 'already_downloaded' : 'already_queued',
+                'message' => $status === 'completed' ? 'Already in library' : 'Already in queue',
+            ]);
+        }
         
         try {
             $jobId = $this->downloadService->queueDownload([
-                'video_id' => $data['video_id'] ?? '',
+                'video_id' => $videoId,
                 'source' => $data['source'] ?? 'youtube',
                 'title' => $data['title'] ?? 'Unknown',
                 'artist' => $data['artist'] ?? 'Unknown',

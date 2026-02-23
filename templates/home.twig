@@ -28,10 +28,16 @@
     <div class="spinner"></div>
 </div>
 
-<div id="results" class="results">
-    <div class="empty-state">
-        <div class="empty-state-icon">🎵</div>
-        <p>Search for music to get started</p>
+<div id="results-container">
+    <div id="results-header" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span id="results-count" style="font-size: 13px; color: var(--text-secondary);"></span>
+        <button onclick="clearResults()" class="clear-btn" style="font-size: 12px; padding: 6px 12px;">Clear Results</button>
+    </div>
+    <div id="results" class="results">
+        <div class="empty-state">
+            <div class="empty-state-icon">🎵</div>
+            <p>Search for music to get started</p>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -48,5 +54,64 @@
             htmx.trigger(this.closest('form'), 'submit');
         }
     });
+
+    // Show results header when results are loaded
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target.id === 'results') {
+            const results = document.querySelectorAll('#results .result-item');
+            const header = document.getElementById('results-header');
+            const count = document.getElementById('results-count');
+            if (results.length > 0) {
+                header.style.display = 'flex';
+                count.textContent = results.length + ' result' + (results.length > 1 ? 's' : '');
+            } else {
+                header.style.display = 'none';
+            }
+        }
+    });
+
+    // Clear results function
+    function clearResults() {
+        document.getElementById('results').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🎵</div>
+                <p>Search for music to get started</p>
+            </div>
+        `;
+        document.getElementById('results-header').style.display = 'none';
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchInput').focus();
+    }
+
+    // Auto-fade downloaded/queued items using MutationObserver
+    const resultsContainer = document.getElementById('results');
+    const fadeItem = (el) => {
+        if (el.dataset.fading) return; // Already scheduled
+        el.dataset.fading = 'true';
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.5s, max-height 0.5s, margin 0.5s, padding 0.5s';
+            el.style.opacity = '0';
+            el.style.maxHeight = '0';
+            el.style.margin = '0';
+            el.style.padding = '0';
+            el.style.overflow = 'hidden';
+            setTimeout(() => el.remove(), 500);
+        }, 4000);
+    };
+    
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1 && node.classList && node.classList.contains('result-item')) {
+                    if (node.textContent.includes('Added to queue') || 
+                        node.textContent.includes('Already in')) {
+                        fadeItem(node);
+                    }
+                }
+            });
+        });
+    });
+    
+    observer.observe(resultsContainer, { childList: true, subtree: true });
 </script>
 {% endblock %}

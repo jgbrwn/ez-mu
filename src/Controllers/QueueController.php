@@ -29,6 +29,9 @@ class QueueController
      */
     public function index(Request $request, Response $response): Response
     {
+        // Auto-clear completed jobs older than 30 minutes
+        $this->queueService->clearOldCompleted(30);
+        
         $params = $request->getQueryParams();
         $page = max(1, (int)($params['page'] ?? 1));
         $perPage = 25;
