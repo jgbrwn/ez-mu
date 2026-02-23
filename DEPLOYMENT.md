@@ -73,8 +73,13 @@ ez-mu/
 │   └── .htaccess
 ├── src/
 ├── templates/
-└── vendor/
+├── vendor/
+└── .env            (optional, for AcoustID - see below)
 ```
+
+> **Note:** The `.env` file is optional on shared hosting since audio fingerprinting
+> requires `fpcalc` which isn't available. If you do use it, ensure it's placed in
+> the project root (outside `public/`) so it's not web-accessible.
 
 #### 2. Configure Document Root
 
@@ -270,7 +275,25 @@ server {
 
 ### Environment Variables
 
-You can customize binary paths via environment variables:
+EZ-MU uses a `.env` file for configuration. Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+Available settings:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ACOUSTID_API_KEY` | API key for audio fingerprinting | No (VPS only) |
+
+Get an AcoustID API key at: https://acoustid.org/api-key
+
+> **Shared Hosting:** The `.env` file is optional since fingerprinting requires
+> `fpcalc` which isn't available on shared hosting. Text-based MusicBrainz
+> lookups work without it.
+
+You can also customize binary paths via environment variables:
 
 ```bash
 export YT_DLP_PATH=/usr/local/bin/yt-dlp
