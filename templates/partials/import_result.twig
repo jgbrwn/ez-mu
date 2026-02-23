@@ -1,0 +1,27 @@
+{% if error %}
+<div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error); border-radius: 8px; color: var(--error); font-size: 13px;">
+    {{ error }}
+</div>
+{% elseif playlist %}
+<div style="padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div>
+            <div style="font-size: 15px; font-weight: 600;">{{ playlist.name }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">{{ playlist.count }} tracks from {{ playlist.platform|capitalize }}</div>
+        </div>
+        <form hx-post="/import/tracks" hx-target="#import-result" hx-indicator="#import-spinner2">
+            <input type="hidden" name="tracks" value="{{ playlist.tracks|join("\n") }}">
+            <button type="submit" class="save-btn">⬇ Import All to Queue</button>
+        </form>
+    </div>
+    <div id="import-spinner2" class="loading htmx-indicator"><div class="spinner"></div></div>
+    <div id="import-result"></div>
+    <div style="max-height: 300px; overflow-y: auto; margin-top: 12px;">
+        {% for track in playlist.tracks %}
+        <div style="padding: 8px; border-bottom: 1px solid var(--border); font-size: 13px;">
+            {{ loop.index }}. {{ track }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

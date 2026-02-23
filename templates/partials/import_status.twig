@@ -1,0 +1,46 @@
+{% if error %}
+<div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error); border-radius: 8px; color: var(--error); font-size: 13px;">
+    {{ error }}
+</div>
+{% else %}
+<div style="padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
+    <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: var(--accent);">{{ queued }}</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Queued</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: var(--error);">{{ failed }}</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Not Found</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: var(--text-secondary);">{{ total }}</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Total</div>
+        </div>
+    </div>
+    {% if queued > 0 %}
+    <a href="/queue" style="display: inline-block; padding: 8px 16px; background: var(--accent); color: #000; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600;">
+        View Queue →
+    </a>
+    {% endif %}
+    {% if results %}
+    <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; font-size: 13px; color: var(--text-secondary);">Show details</summary>
+        <div style="max-height: 200px; overflow-y: auto; margin-top: 8px;">
+            {% for r in results %}
+            <div style="padding: 6px; border-bottom: 1px solid var(--border); font-size: 12px;">
+                {% if r.status == 'queued' %}
+                <span style="color: var(--accent);">✓</span> {{ r.track }}
+                <span style="color: var(--text-secondary);">→ {{ r.match }}</span>
+                {% elseif r.status == 'not_found' %}
+                <span style="color: var(--error);">✗</span> {{ r.track }} <span style="color: var(--text-secondary);">(not found)</span>
+                {% else %}
+                <span style="color: var(--error);">✗</span> {{ r.track }} <span style="color: var(--text-secondary);">({{ r.error }})</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+</div>
+{% endif %}

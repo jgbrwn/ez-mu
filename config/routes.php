@@ -12,6 +12,7 @@ use App\Controllers\QueueController;
 use App\Controllers\LibraryController;
 use App\Controllers\SettingsController;
 use App\Controllers\StreamController;
+use App\Controllers\ImportController;
 
 return function (App $app) {
     // Main UI routes
@@ -40,6 +41,11 @@ return function (App $app) {
     $app->get('/stream/{id}', [StreamController::class, 'stream']);
     $app->post('/library/download', [LibraryController::class, 'downloadSelected']);
     $app->delete('/library/{id}', [LibraryController::class, 'deleteTrack']);
+    
+    // Import
+    $app->get('/import', [ImportController::class, 'index']);
+    $app->post('/import/fetch', [ImportController::class, 'fetchPlaylist']);
+    $app->post('/import/tracks', [ImportController::class, 'importTracks']);
     
     // Settings
     $app->get('/settings', [SettingsController::class, 'index']);

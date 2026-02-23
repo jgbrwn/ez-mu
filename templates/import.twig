@@ -1,0 +1,61 @@
+{% extends 'base.twig' %}
+
+{% block title %}Import - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab">Library</a>
+    <a href="/queue" class="tab">Queue</a>
+    <a href="/import" class="tab active">Import</a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div class="settings-section">
+    <div class="settings-section-title">Import from Playlist URL</div>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+        Paste a playlist URL to fetch tracks, then import them to search and download from Monochrome/Tidal.
+    </p>
+    <form hx-post="/import/fetch" hx-target="#playlist-result" hx-indicator="#fetch-spinner">
+        <div style="display: flex; gap: 8px;">
+            <input 
+                type="text" 
+                name="url" 
+                placeholder="https://open.spotify.com/playlist/... or YouTube/Tidal/Amazon URL"
+                style="flex: 1; padding: 12px; font-size: 14px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);"
+            >
+            <button type="submit" class="save-btn" style="white-space: nowrap;">
+                Fetch Playlist
+            </button>
+        </div>
+        <div style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+            Supported: Spotify playlists/albums, YouTube/YouTube Music playlists, Tidal playlists, Amazon Music playlists
+        </div>
+    </form>
+    <div id="fetch-spinner" class="loading htmx-indicator" style="margin-top: 12px;">
+        <div class="spinner"></div>
+    </div>
+    <div id="playlist-result" style="margin-top: 12px;"></div>
+</div>
+
+<div class="settings-section">
+    <div class="settings-section-title">Bulk Import from Text</div>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+        Enter tracks manually, one per line (format: Artist - Title).
+    </p>
+    <form hx-post="/import/tracks" hx-target="#import-result" hx-indicator="#import-spinner">
+        <textarea 
+            name="tracks" 
+            class="bulk-textarea"
+            placeholder="Daft Punk - Get Lucky&#10;The Weeknd - Blinding Lights&#10;Tame Impala - The Less I Know The Better"
+        ></textarea>
+        <button type="submit" class="save-btn" style="margin-top: 12px; width: 100%;">
+            Search & Queue All
+        </button>
+    </form>
+    <div id="import-spinner" class="loading htmx-indicator" style="margin-top: 12px;">
+        <div class="spinner"></div>
+    </div>
+    <div id="import-result" style="margin-top: 12px;"></div>
+</div>
+{% endblock %}

@@ -13,6 +13,7 @@ use App\Services\SettingsService;
 use App\Services\MusicLibrary;
 use App\Services\RateLimiter;
 use App\Services\MonochromeService;
+use App\Services\PlaylistService;
 
 return [
     // Configuration
@@ -89,5 +90,9 @@ return [
             $settings['music_dir'],
             $settings['singles_dir']
         );
+    },
+
+    PlaylistService::class => function () {
+        return new PlaylistService();
     },
 ];
