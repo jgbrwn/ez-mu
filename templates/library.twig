@@ -34,6 +34,9 @@
         <button id="selectAllBtn" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" onclick="toggleSelectAll()">
             Select All
         </button>
+        <button type="button" class="clear-btn" style="color: var(--error); border-color: var(--error);" id="deleteSelectedBtn" disabled onclick="confirmBulkDelete()">
+            🗑 Delete Selected
+        </button>
         <form id="downloadForm" action="/library/download" method="POST">
             <button type="submit" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" id="downloadSelectedBtn" disabled>
                 ⬇ Download Selected
@@ -64,11 +67,11 @@
 <div id="deleteModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <div style="font-size: 24px; margin-bottom: 12px;">🗑️</div>
-        <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Delete Track?</div>
+        <div id="deleteModalHeading" style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Delete Track?</div>
         <div id="deleteModalTitle" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;"></div>
         <div style="display: flex; gap: 8px; justify-content: center;">
             <button onclick="closeDeleteModal()" class="clear-btn" style="padding: 8px 20px;">Cancel</button>
-            <button onclick="executeDelete()" class="save-btn" style="padding: 8px 20px; background: var(--error);">Delete</button>
+            <button id="deleteModalBtn" onclick="executeDelete()" class="save-btn" style="padding: 8px 20px; background: var(--error);">Delete</button>
         </div>
     </div>
 </div>
@@ -211,11 +214,19 @@ function toggleSelectAll() {
 
 function updateDownloadButton() {
     const checked = document.querySelectorAll('.track-checkbox:checked');
-    const btn = document.getElementById('downloadSelectedBtn');
-    btn.disabled = checked.length === 0;
-    btn.textContent = checked.length > 0 
+    const downloadBtn = document.getElementById('downloadSelectedBtn');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    
+    downloadBtn.disabled = checked.length === 0;
+    deleteBtn.disabled = checked.length === 0;
+    
+    downloadBtn.textContent = checked.length > 0 
         ? `⬇ Download (${checked.length})`
         : '⬇ Download Selected';
+    
+    deleteBtn.textContent = checked.length > 0 
+        ? `🗑 Delete (${checked.length})`
+        : '🗑 Delete Selected';
     
     // Update form with selected IDs
     const form = document.getElementById('downloadForm');
@@ -236,53 +247,98 @@ document.addEventListener('change', function(e) {
 });
 
 // Delete confirmation
-let deleteTarget = null;
-let deleteTrackId = null;
+let deleteTargets = [];  // Array for bulk delete
+let deleteTrackIds = []; // Array for bulk delete
+let isBulkDelete = false;
 
 function confirmDelete(btn) {
-    deleteTarget = btn.closest('.result-item');
-    deleteTrackId = btn.dataset.trackId;
+    isBulkDelete = false;
+    deleteTargets = [btn.closest('.result-item')];
+    deleteTrackIds = [btn.dataset.trackId];
     const title = btn.dataset.trackTitle;
+    
+    document.getElementById('deleteModalHeading').textContent = 'Delete Track?';
     document.getElementById('deleteModalTitle').textContent = `"${title}" will be permanently removed from your library.`;
+    document.getElementById('deleteModalBtn').textContent = 'Delete';
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function confirmBulkDelete() {
+    const checked = document.querySelectorAll('.track-checkbox:checked');
+    if (checked.length === 0) return;
+    
+    isBulkDelete = true;
+    deleteTargets = [];
+    deleteTrackIds = [];
+    
+    checked.forEach(cb => {
+        deleteTargets.push(cb.closest('.result-item'));
+        deleteTrackIds.push(cb.value);
+    });
+    
+    const count = deleteTrackIds.length;
+    document.getElementById('deleteModalHeading').textContent = `Delete ${count} Track${count > 1 ? 's' : ''}?`;
+    document.getElementById('deleteModalTitle').textContent = `${count} track${count > 1 ? 's' : ''} will be permanently removed from your library. This cannot be undone.`;
+    document.getElementById('deleteModalBtn').textContent = `Delete ${count} Track${count > 1 ? 's' : ''}`;
     document.getElementById('deleteModal').style.display = 'flex';
 }
 
 function closeDeleteModal() {
     document.getElementById('deleteModal').style.display = 'none';
-    deleteTarget = null;
-    deleteTrackId = null;
+    deleteTargets = [];
+    deleteTrackIds = [];
+    isBulkDelete = false;
 }
 
 function executeDelete() {
-    if (!deleteTrackId || !deleteTarget) return;
+    if (deleteTrackIds.length === 0) return;
     
-    fetch('/library/' + deleteTrackId, { method: 'DELETE' })
-        .then(response => {
-            if (response.ok) {
-                // Animate removal
-                deleteTarget.style.transition = 'opacity 0.3s, max-height 0.3s, margin 0.3s, padding 0.3s';
-                deleteTarget.style.opacity = '0';
-                deleteTarget.style.maxHeight = '0';
-                deleteTarget.style.margin = '0';
-                deleteTarget.style.padding = '0';
-                deleteTarget.style.overflow = 'hidden';
-                setTimeout(() => deleteTarget.remove(), 300);
-                
-                // Update track count in header
-                const countEl = document.querySelector('.queue-header h2');
-                if (countEl) {
-                    const match = countEl.textContent.match(/(\d+) tracks/);
-                    if (match) {
-                        const newCount = parseInt(match[1]) - 1;
-                        countEl.textContent = countEl.textContent.replace(/\d+ tracks/, newCount + ' tracks');
-                    }
+    const deleteBtn = document.getElementById('deleteModalBtn');
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Deleting...';
+    
+    // Delete all tracks
+    const deletePromises = deleteTrackIds.map(id => 
+        fetch('/library/' + id, { method: 'DELETE' })
+    );
+    
+    Promise.all(deletePromises)
+        .then(responses => {
+            const successCount = responses.filter(r => r.ok).length;
+            
+            // Animate removal of all targets
+            deleteTargets.forEach(target => {
+                target.style.transition = 'opacity 0.3s, max-height 0.3s, margin 0.3s, padding 0.3s';
+                target.style.opacity = '0';
+                target.style.maxHeight = '0';
+                target.style.margin = '0';
+                target.style.padding = '0';
+                target.style.overflow = 'hidden';
+                setTimeout(() => target.remove(), 300);
+            });
+            
+            // Update track count in header
+            const countEl = document.querySelector('.queue-header h2');
+            if (countEl) {
+                const match = countEl.textContent.match(/(\d+) tracks/);
+                if (match) {
+                    const newCount = Math.max(0, parseInt(match[1]) - successCount);
+                    countEl.textContent = countEl.textContent.replace(/\d+ tracks/, newCount + ' tracks');
                 }
-            } else {
-                alert('Failed to delete track');
+            }
+            
+            // Update buttons
+            setTimeout(updateDownloadButton, 350);
+            
+            if (successCount < deleteTrackIds.length) {
+                alert(`Deleted ${successCount} of ${deleteTrackIds.length} tracks. Some deletions failed.`);
             }
         })
-        .catch(() => alert('Failed to delete track'))
-        .finally(() => closeDeleteModal());
+        .catch(() => alert('Failed to delete tracks'))
+        .finally(() => {
+            closeDeleteModal();
+            deleteBtn.disabled = false;
+        });
 }
 
 // Close modal on escape key
