@@ -349,12 +349,14 @@ h1 {
     flex-wrap: wrap;
     gap: 14px;
     padding: 14px;
+    padding-right: 60px; /* Space for download button */
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    min-height: 64px;
 }
 
 .result-item:hover {
@@ -527,17 +529,19 @@ h1 {
 .download-btn {
     background: var(--accent);
     border: none;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     color: #000;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.15s, background 0.15s;
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
 }
 
 .download-btn:hover {
