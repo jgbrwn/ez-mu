@@ -1,0 +1,112 @@
+# EZ-MU .htaccess Configuration
+# Copy this file to .htaccess and customize for your hosting
+
+# ============================================================
+# BASIC AUTHENTICATION (Recommended for security)
+# ============================================================
+# Uncomment these lines to enable password protection
+# You'll need to create a .htpasswd file (see instructions below)
+#
+# AuthType Basic
+# AuthName "EZ-MU - Login Required"
+# AuthUserFile /home/YOUR_USERNAME/ez-mu/.htpasswd
+# Require valid-user
+#
+# To create .htpasswd file, run this command via SSH:
+#   htpasswd -c /home/YOUR_USERNAME/ez-mu/.htpasswd yourusername
+#
+# For additional users (without -c flag):
+#   htpasswd /home/YOUR_USERNAME/ez-mu/.htpasswd anotherusername
+#
+# IMPORTANT: Place .htpasswd OUTSIDE the public directory!
+# ============================================================
+
+# ============================================================
+# URL REWRITING (Required for Slim Framework)
+# ============================================================
+RewriteEngine On
+
+# Handle Authorization Header
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Redirect Trailing Slashes If Not A Folder
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} (.+)/$
+RewriteRule ^ %1 [L,R=301]
+
+# Handle Front Controller
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [QSA,L]
+
+# ============================================================
+# SECURITY HEADERS
+# ============================================================
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS filter
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ============================================================
+# CACHING FOR STATIC ASSETS
+# ============================================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+</IfModule>
+
+# ============================================================
+# GZIP COMPRESSION
+# ============================================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json
+</IfModule>
+
+# ============================================================
+# BLOCK ACCESS TO SENSITIVE FILES
+# ============================================================
+<FilesMatch "^\.(htaccess|htpasswd|env|git|gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to composer files
+<FilesMatch "^composer\.(json|lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ============================================================
+# PHP SETTINGS (if allowed by hosting)
+# ============================================================
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value memory_limit 256M
+</IfModule>

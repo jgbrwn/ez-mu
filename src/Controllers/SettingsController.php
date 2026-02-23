@@ -6,6 +6,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\SettingsService;
+use App\Services\Environment;
 use Psr\Container\ContainerInterface;
 
 class SettingsController
@@ -24,9 +25,11 @@ class SettingsController
     public function index(Request $request, Response $response): Response
     {
         $settings = $this->settings->getAll();
+        $environment = Environment::getSummary();
 
         return $this->twig->render($response, 'settings.twig', [
             'settings' => $settings,
+            'environment' => $environment,
         ]);
     }
 

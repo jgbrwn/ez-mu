@@ -1,0 +1,361 @@
+# EZ-MU Deployment Guide
+
+This guide covers deploying EZ-MU to shared hosting (DirectAdmin, cPanel, etc.) and VPS/dedicated servers.
+
+## Table of Contents
+
+1. [Requirements](#requirements)
+2. [Shared Hosting Deployment](#shared-hosting-deployment)
+3. [VPS/Dedicated Server Deployment](#vpsdedicated-server-deployment)
+4. [Password Protection](#password-protection)
+5. [Configuration](#configuration)
+6. [Troubleshooting](#troubleshooting)
+
+---
+
+## Requirements
+
+### Minimum (Shared Hosting - Monochrome Only)
+
+- PHP 8.1+ with extensions:
+  - `pdo_sqlite`
+  - `curl`
+  - `mbstring`
+  - `zip`
+- Composer (for dependency installation)
+- Write access to `data/` and `music/` directories
+
+### Full Features (VPS/Dedicated)
+
+All of the above, plus:
+- `yt-dlp` - For YouTube and SoundCloud support
+- `ffmpeg` - For audio conversion
+- `fpcalc` (chromaprint) - For audio fingerprinting (optional)
+
+---
+
+## Shared Hosting Deployment
+
+### What Works on Shared Hosting
+
+✅ **Monochrome/Tidal Downloads** - Lossless FLAC from Tidal CDN  
+✅ **Playlist Import** - Spotify, Apple Music, Tidal playlists  
+✅ **MusicBrainz Lookups** - Text-based metadata enrichment  
+✅ **Library Management** - Browse, play, download tracks  
+✅ **FLAC Tagging** - Pure PHP implementation (no external tools)
+
+❌ **YouTube Downloads** - Requires yt-dlp  
+❌ **SoundCloud Downloads** - Requires yt-dlp  
+❌ **Audio Fingerprinting** - Requires fpcalc  
+
+### Step-by-Step Instructions
+
+#### 1. Upload Files
+
+Download or clone the repository to your local machine:
+
+```bash
+git clone https://github.com/your-repo/ez-mu.git
+cd ez-mu
+composer install --no-dev --optimize-autoloader
+```
+
+Upload the following to your hosting:
+
+```
+ez-mu/
+├── config/
+├── data/           (create if missing)
+├── music/          (create if missing)
+├── public/         → Point domain here
+│   ├── index.php
+│   ├── static/
+│   └── .htaccess
+├── src/
+├── templates/
+└── vendor/
+```
+
+#### 2. Configure Document Root
+
+In DirectAdmin or cPanel, set your domain's document root to the `public/` directory:
+
+- **DirectAdmin**: Domain Setup → Select domain → Document Root → `/domains/yourdomain.com/public_html/ez-mu/public`
+- **cPanel**: Domains → Document Root → `/home/username/public_html/ez-mu/public`
+
+#### 3. Set Up .htaccess
+
+```bash
+cd public/
+cp .htaccess.example .htaccess
+```
+
+Edit `.htaccess` to configure URL rewriting (usually works by default).
+
+#### 4. Create Required Directories
+
+```bash
+mkdir -p data music/Singles
+chmod 755 data music music/Singles
+```
+
+#### 5. Set File Permissions
+
+```bash
+# Make directories writable
+chmod 755 data/
+chmod 755 music/
+chmod -R 755 music/Singles/
+
+# Protect sensitive files
+chmod 644 config/*.php
+chmod 644 .htaccess
+```
+
+#### 6. Test the Installation
+
+Visit your domain. You should see the EZ-MU interface.
+
+- Search for music → Should show Monochrome/Tidal results
+- Download a track → Should save FLAC to library
+- Check Library → Should show downloaded tracks with playback
+
+---
+
+## Password Protection
+
+### Method 1: .htaccess Basic Auth (Recommended)
+
+#### 1. Create Password File
+
+SSH into your hosting and run:
+
+```bash
+# Navigate to your app root (NOT public/)
+cd /home/username/ez-mu
+
+# Create password file with first user
+htpasswd -c .htpasswd yourusername
+# Enter password when prompted
+
+# Add additional users (without -c flag)
+htpasswd .htpasswd anotheruser
+```
+
+#### 2. Configure .htaccess
+
+Edit `public/.htaccess` and uncomment the authentication section:
+
+```apache
+AuthType Basic
+AuthName "EZ-MU - Login Required"
+AuthUserFile /home/username/ez-mu/.htpasswd
+Require valid-user
+```
+
+**Important**: Update `/home/username/ez-mu/.htpasswd` to your actual path!
+
+#### 3. Test Authentication
+
+Visit your site - you should see a login prompt.
+
+### Method 2: DirectAdmin Password Protected Directory
+
+1. Log into DirectAdmin
+2. Go to **Advanced Features** → **Password Protected Directories**
+3. Select the `public/` directory
+4. Add users with passwords
+5. Enable protection
+
+### Method 3: Application-Level Auth (Future)
+
+A future version may include built-in user authentication.
+
+---
+
+## VPS/Dedicated Server Deployment
+
+For full functionality including YouTube and SoundCloud:
+
+### Install System Dependencies
+
+#### Debian/Ubuntu
+
+```bash
+# PHP and extensions
+sudo apt update
+sudo apt install php8.2 php8.2-sqlite3 php8.2-curl php8.2-mbstring php8.2-zip
+
+# Optional: Full features
+sudo apt install ffmpeg flac
+
+# yt-dlp (latest version)
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
+
+# Chromaprint for audio fingerprinting (optional)
+sudo apt install libchromaprint-tools
+```
+
+### Deploy Application
+
+```bash
+cd /var/www
+git clone https://github.com/your-repo/ez-mu.git
+cd ez-mu
+composer install --no-dev --optimize-autoloader
+mkdir -p data music/Singles
+chown -R www-data:www-data data/ music/
+```
+
+### Nginx Configuration
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+    root /var/www/ez-mu/public;
+    index index.php;
+
+    # Basic auth (optional)
+    # auth_basic "EZ-MU";
+    # auth_basic_user_file /var/www/ez-mu/.htpasswd;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(ht|git) {
+        deny all;
+    }
+
+    location /music {
+        internal;
+        alias /var/www/ez-mu/music;
+    }
+}
+```
+
+### Apache Virtual Host
+
+```apache
+<VirtualHost *:80>
+    ServerName yourdomain.com
+    DocumentRoot /var/www/ez-mu/public
+    
+    <Directory /var/www/ez-mu/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    # Basic auth (optional)
+    # <Location />
+    #     AuthType Basic
+    #     AuthName "EZ-MU"
+    #     AuthUserFile /var/www/ez-mu/.htpasswd
+    #     Require valid-user
+    # </Location>
+</VirtualHost>
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+You can customize binary paths via environment variables:
+
+```bash
+export YT_DLP_PATH=/usr/local/bin/yt-dlp
+export FFMPEG_PATH=/usr/bin/ffmpeg
+export FPCALC_PATH=/usr/bin/fpcalc
+```
+
+### Application Settings
+
+Settings are stored in SQLite and managed via the web interface:
+
+- **Convert to FLAC** - Auto-convert downloads
+- **Organize by Artist** - Create artist subdirectories  
+- **MusicBrainz Lookup** - Enrich metadata from MusicBrainz
+- **YouTube** - Enable/disable YouTube search (requires yt-dlp)
+
+### Database Location
+
+The SQLite database is stored at `data/ez-mu.db`. To backup:
+
+```bash
+cp data/ez-mu.db data/ez-mu.db.backup
+```
+
+---
+
+## Troubleshooting
+
+### "500 Internal Server Error"
+
+1. Check PHP error logs
+2. Verify `mod_rewrite` is enabled
+3. Check file permissions on `data/` directory
+
+### "No results found" for searches
+
+1. Verify internet connectivity from server
+2. Check if `curl` extension is enabled: `php -m | grep curl`
+3. Test Monochrome API: `curl https://api.monochrome.tf/v1/health`
+
+### Downloads failing
+
+1. Check write permissions on `music/` directory
+2. Verify disk space
+3. Check PHP `max_execution_time` (should be 300+)
+
+### Tags not being written
+
+1. On shared hosting: Pure PHP FlacWriter is used (no external tools needed)
+2. On VPS: Verify `metaflac` is installed: `which metaflac`
+
+### "yt-dlp not found"
+
+This is expected on shared hosting. Only Monochrome/Tidal downloads will work.
+
+For VPS, install yt-dlp:
+```bash
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
+```
+
+### Checking Feature Availability
+
+Visit `/settings` to see which features are available on your hosting.
+
+---
+
+## Security Recommendations
+
+1. **Always use password protection** - Either .htaccess or DirectAdmin/cPanel
+2. **Keep .htpasswd outside public/** - Store in app root, not web-accessible
+3. **Use HTTPS** - Get a free SSL cert from Let's Encrypt
+4. **Regular backups** - Backup `data/` and `music/` directories
+5. **Keep updated** - Update yt-dlp regularly for best results
+
+---
+
+## Support
+
+If you encounter issues:
+
+1. Check the [Troubleshooting](#troubleshooting) section
+2. Review PHP error logs
+3. Open an issue on GitHub with:
+   - Hosting type (shared/VPS)
+   - PHP version (`php -v`)
+   - Error messages
+   - Steps to reproduce

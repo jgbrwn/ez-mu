@@ -2,15 +2,18 @@
 
 namespace App\Services;
 
+use App\Services\Audio\FlacWriter;
+use App\Services\Audio\AudioInfo;
 use Exception;
 
 /**
  * MetadataService - AcoustID fingerprinting + MusicBrainz lookups
  * 
- * Similar to MusicGrabber's metadata.py:
- * 1. Fingerprint audio with fpcalc → query AcoustID
- * 2. If match found, enrich with MusicBrainz recording data
- * 3. Fall back to text-based MusicBrainz search
+ * Shared hosting compatible:
+ * - Uses pure PHP FlacWriter when metaflac is unavailable
+ * - Uses pure PHP AudioInfo when ffprobe is unavailable  
+ * - Fingerprinting requires fpcalc (optional, graceful degradation)
+ * - Text-based MusicBrainz lookups always work (pure HTTP)
  */
 class MetadataService
 {
@@ -22,11 +25,15 @@ class MetadataService
 
     private Database $db;
     private bool $enabled = true;
+    private bool $canFingerprint = false;
+    private bool $useNativeMetaflac = false;
 
     public function __construct(Database $db)
     {
         $this->db = $db;
         $this->enabled = $this->getSetting('enable_musicbrainz', true);
+        $this->canFingerprint = Environment::has('fpcalc');
+        $this->useNativeMetaflac = Environment::has('metaflac');
     }
 
     /**
@@ -76,9 +83,12 @@ class MetadataService
      */
     private function runFpcalc(string $filePath): ?array
     {
-        $fpcalc = $this->findFpcalc();
+        if (!$this->canFingerprint) {
+            return null;
+        }
+
+        $fpcalc = Environment::getBinaryPath('fpcalc');
         if (!$fpcalc) {
-            error_log('fpcalc not found, skipping fingerprinting');
             return null;
         }
 
@@ -117,16 +127,6 @@ class MetadataService
         }
 
         return [$duration, $fingerprint];
-    }
-
-    private function findFpcalc(): ?string
-    {
-        foreach (['/usr/bin/fpcalc', '/usr/local/bin/fpcalc', 'fpcalc'] as $path) {
-            if (file_exists($path) || shell_exec("which {$path} 2>/dev/null")) {
-                return $path;
-            }
-        }
-        return null;
     }
 
     /**
@@ -377,7 +377,8 @@ class MetadataService
     }
 
     /**
-     * Apply metadata tags to a FLAC file
+     * Apply metadata tags to an audio file
+     * Uses pure PHP FlacWriter for FLAC files (shared hosting compatible)
      */
     public function applyMetadataToFile(string $filePath, string $artist, string $title, ?string $album = null, ?string $year = null): bool
     {
@@ -387,29 +388,60 @@ class MetadataService
 
         $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
-        // Use metaflac for FLAC files (most reliable)
         if ($ext === 'flac') {
-            return $this->applyMetaflac($filePath, $artist, $title, $album, $year);
+            return $this->applyFlacTags($filePath, $artist, $title, $album, $year);
         }
 
-        // Use ffmpeg for other formats
-        return $this->applyFfmpegMetadata($filePath, $artist, $title, $album, $year);
+        // For non-FLAC, try ffmpeg if available
+        if (Environment::has('ffmpeg')) {
+            return $this->applyFfmpegMetadata($filePath, $artist, $title, $album, $year);
+        }
+
+        // No way to tag non-FLAC files without ffmpeg
+        error_log("Cannot tag {$ext} files without ffmpeg");
+        return false;
     }
 
     /**
-     * Apply metadata using metaflac
+     * Apply tags to FLAC file - uses native metaflac if available, otherwise pure PHP
      */
-    private function applyMetaflac(string $filePath, string $artist, string $title, ?string $album, ?string $year): bool
+    private function applyFlacTags(string $filePath, string $artist, string $title, ?string $album, ?string $year): bool
     {
-        $metaflac = shell_exec('which metaflac 2>/dev/null');
+        // Try native metaflac first (faster, preserves all metadata)
+        if ($this->useNativeMetaflac) {
+            $result = $this->applyMetaflacNative($filePath, $artist, $title, $album, $year);
+            if ($result) {
+                return true;
+            }
+        }
+
+        // Fall back to pure PHP FlacWriter
+        $tags = [
+            'ARTIST' => $artist,
+            'TITLE' => $title,
+        ];
+        if ($album) {
+            $tags['ALBUM'] = $album;
+        }
+        if ($year) {
+            $tags['DATE'] = $year;
+        }
+
+        return FlacWriter::writeTags($filePath, $tags);
+    }
+
+    /**
+     * Apply metadata using native metaflac binary
+     */
+    private function applyMetaflacNative(string $filePath, string $artist, string $title, ?string $album, ?string $year): bool
+    {
+        $metaflac = Environment::getBinaryPath('metaflac');
         if (!$metaflac) {
-            error_log('metaflac not found, skipping tag update');
             return false;
         }
 
-        // Remove existing tags and add new ones
         $cmd = [
-            'metaflac',
+            $metaflac,
             '--remove-tag=ARTIST',
             '--remove-tag=TITLE',
             '--remove-tag=ALBUM',
@@ -450,11 +482,16 @@ class MetadataService
      */
     private function applyFfmpegMetadata(string $filePath, string $artist, string $title, ?string $album, ?string $year): bool
     {
+        $ffmpeg = Environment::getBinaryPath('ffmpeg');
+        if (!$ffmpeg) {
+            return false;
+        }
+
         // ffmpeg requires output to different file, then move
         $tempPath = $filePath . '.temp.' . pathinfo($filePath, PATHINFO_EXTENSION);
 
         $cmd = [
-            'ffmpeg',
+            $ffmpeg,
             '-y',
             '-i', $filePath,
             '-c', 'copy',

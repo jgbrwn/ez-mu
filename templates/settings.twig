@@ -115,6 +115,54 @@
     </div>
 </form>
 
+<div class="settings-section" style="margin-top: 24px;">
+    <div class="settings-section-title">System Information</div>
+    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+        <div style="margin-bottom: 12px;">
+            <strong style="color: var(--accent);">{{ environment.mode }}</strong>
+        </div>
+        
+        <div style="font-size: 13px; margin-bottom: 12px;">
+            <strong>Search Sources:</strong>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-secondary);">
+                {% for source, status in environment.search_sources %}
+                <li>{{ source|capitalize }}: 
+                    {% if status == 'Available' %}
+                    <span style="color: var(--accent);">✓ {{ status }}</span>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">✗ {{ status }}</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div style="font-size: 13px; margin-bottom: 12px;">
+            <strong>Features:</strong>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-secondary);">
+                {% for feature, available in environment.features %}
+                <li>{{ feature }}: 
+                    {% if available %}
+                    <span style="color: var(--accent);">✓</span>
+                    {% else %}
+                    <span style="color: var(--error);">✗</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <details style="font-size: 12px; color: var(--text-secondary);">
+            <summary style="cursor: pointer; margin-bottom: 8px;">Binary Paths (Advanced)</summary>
+            <ul style="margin: 8px 0; padding-left: 20px; font-family: monospace; font-size: 11px;">
+                {% for binary, path in environment.binaries %}
+                <li>{{ binary }}: {{ path }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+    </div>
+</div>
+
 <script>
 // Toggle YouTube cookies section visibility
 document.querySelector('input[name="youtube_enabled"]').addEventListener('change', function() {

@@ -8,6 +8,7 @@ class SearchService
     private RateLimiter $rateLimiter;
     private MonochromeService $monochrome;
     private SettingsService $settings;
+    private bool $hasYtDlp = false;
 
     public function __construct(
         Database $db,
@@ -19,12 +20,12 @@ class SearchService
         $this->rateLimiter = $rateLimiter;
         $this->monochrome = $monochrome;
         $this->settings = $settings;
+        $this->hasYtDlp = Environment::has('yt_dlp');
     }
 
-    private function getYtDlpPath(): string
+    private function getYtDlpPath(): ?string
     {
-        $userPath = getenv('HOME') . '/.local/bin/yt-dlp';
-        return file_exists($userPath) ? $userPath : 'yt-dlp';
+        return Environment::getBinaryPath('yt-dlp');
     }
 
     /**
@@ -35,16 +36,18 @@ class SearchService
         $results = [];
         $youtubeEnabled = $this->settings->getBool('youtube_enabled', false);
 
-        // Primary: Monochrome (Tidal lossless)
+        // Primary: Monochrome (Tidal lossless) - always available (pure HTTP)
         $monoResults = $this->monochrome->search($query, $limit);
         $results = array_merge($results, $monoResults);
 
-        // Secondary: SoundCloud
-        $scResults = $this->searchSoundCloud($query, $limit);
-        $results = array_merge($results, $scResults);
+        // Secondary: SoundCloud (requires yt-dlp)
+        if ($this->hasYtDlp) {
+            $scResults = $this->searchSoundCloud($query, $limit);
+            $results = array_merge($results, $scResults);
+        }
 
-        // Tertiary: YouTube (only if enabled)
-        if ($youtubeEnabled) {
+        // Tertiary: YouTube (requires yt-dlp + must be enabled)
+        if ($this->hasYtDlp && $youtubeEnabled) {
             $ytResults = $this->searchYouTube($query, $limit);
             $results = array_merge($results, $ytResults);
         }
@@ -63,13 +66,18 @@ class SearchService
      */
     public function searchYouTube(string $query, int $limit = 15): array
     {
+        $ytDlpPath = $this->getYtDlpPath();
+        if (!$ytDlpPath) {
+            return []; // yt-dlp not available
+        }
+
         // Rate limit: 20 requests per minute for YouTube
         $this->rateLimiter->wait('youtube', 20, 60);
 
         $searchQuery = "ytsearch{$limit}:{$query}";
         
         $cmd = [
-            $this->getYtDlpPath(),
+            $ytDlpPath,
             '--dump-json',
             '--flat-playlist',
             '--no-warnings',
@@ -113,6 +121,11 @@ class SearchService
      */
     public function searchSoundCloud(string $query, int $limit = 15): array
     {
+        $ytDlpPath = $this->getYtDlpPath();
+        if (!$ytDlpPath) {
+            return []; // yt-dlp not available
+        }
+
         // Rate limit: 15 requests per minute for SoundCloud
         $this->rateLimiter->wait('soundcloud', 15, 60);
 
@@ -120,7 +133,7 @@ class SearchService
         $searchQuery = "scsearch{$fetchLimit}:{$query}";
         
         $cmd = [
-            $this->getYtDlpPath(),
+            $ytDlpPath,
             '--dump-json',
             '--flat-playlist',
             '--no-warnings',

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Audio\AudioInfo;
 use Exception;
 
 class DownloadService
@@ -156,10 +157,9 @@ class DownloadService
         ];
     }
 
-    private function getYtDlpPath(): string
+    private function getYtDlpPath(): ?string
     {
-        $userPath = getenv('HOME') . '/.local/bin/yt-dlp';
-        return file_exists($userPath) ? $userPath : 'yt-dlp';
+        return Environment::getBinaryPath('yt-dlp');
     }
 
     /**
@@ -167,6 +167,11 @@ class DownloadService
      */
     private function downloadWithYtDlp(array $job): array
     {
+        $ytDlpPath = $this->getYtDlpPath();
+        if (!$ytDlpPath) {
+            throw new Exception('yt-dlp not available. YouTube/SoundCloud downloads require yt-dlp to be installed.');
+        }
+
         $source = $job['source'] ?? 'youtube';
         
         // Rate limit based on source
@@ -204,7 +209,7 @@ class DownloadService
         }
 
         $cmd = [
-            $this->getYtDlpPath(),
+            $ytDlpPath,
             '-x',
             '--audio-quality', '0',
             '--embed-thumbnail',
@@ -414,52 +419,12 @@ class DownloadService
         );
     }
 
+    /**
+     * Get audio file information using pure PHP (shared hosting compatible)
+     */
     private function getAudioInfo(string $filePath): array
     {
-        $cmd = [
-            'ffprobe',
-            '-v', 'quiet',
-            '-print_format', 'json',
-            '-show_format',
-            '-show_streams',
-            $filePath
-        ];
-
-        $process = proc_open($cmd, [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ], $pipes);
-
-        if (!is_resource($process)) {
-            return [];
-        }
-
-        fclose($pipes[0]);
-        $output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-
-        $data = json_decode($output, true);
-        if (!$data) {
-            return [];
-        }
-
-        $format = $data['format'] ?? [];
-        $audioStream = null;
-        foreach (($data['streams'] ?? []) as $stream) {
-            if (($stream['codec_type'] ?? '') === 'audio') {
-                $audioStream = $stream;
-                break;
-            }
-        }
-
-        return [
-            'duration' => (int)($format['duration'] ?? 0),
-            'bitrate' => (int)(($format['bit_rate'] ?? 0) / 1000),
-            'codec' => $audioStream['codec_name'] ?? 'unknown',
-        ];
+        return AudioInfo::analyze($filePath);
     }
 
     private function sanitizeFilename(string $name): string
