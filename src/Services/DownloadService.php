@@ -62,6 +62,9 @@ class DownloadService
      */
     public function processDownload(string $jobId): bool
     {
+        // Prevent timeout during download (shared hosting compatible)
+        set_time_limit(0);
+        
         $job = $this->db->queryOne('SELECT * FROM jobs WHERE id = ?', [$jobId]);
         if (!$job) {
             throw new Exception("Job not found: {$jobId}");
@@ -429,8 +432,18 @@ class DownloadService
 
     private function sanitizeFilename(string $name): string
     {
-        $name = preg_replace('/[\\\\\/:*?"<>|]/', '', $name);
+        // Remove path traversal attempts
+        $name = str_replace(['..', '/', '\\'], '', $name);
+        // Remove other dangerous characters
+        $name = preg_replace('/[:*?"<>|]/', '', $name);
+        // Remove control characters
+        $name = preg_replace('/[\x00-\x1F\x7F]/', '', $name);
+        // Trim dots and spaces from ends
         $name = trim($name, '. ');
+        // Limit length to prevent filesystem issues
+        if (strlen($name) > 200) {
+            $name = substr($name, 0, 200);
+        }
         return $name ?: 'Unknown';
     }
 

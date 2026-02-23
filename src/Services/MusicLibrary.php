@@ -97,14 +97,22 @@ class MusicLibrary
             return false;
         }
 
-        // Delete file if it exists
+        // Delete file if it exists and is within our music directory (security check)
         if (!empty($track['file_path']) && file_exists($track['file_path'])) {
-            unlink($track['file_path']);
+            $realPath = realpath($track['file_path']);
+            $musicDirReal = realpath($this->musicDir);
             
-            // Try to remove empty artist directory
-            $dir = dirname($track['file_path']);
-            if (is_dir($dir) && count(glob($dir . '/*')) === 0) {
-                rmdir($dir);
+            // Only delete if file is within music directory (prevent path traversal)
+            if ($realPath && $musicDirReal && str_starts_with($realPath, $musicDirReal)) {
+                unlink($track['file_path']);
+                
+                // Try to remove empty artist directory
+                $dir = dirname($track['file_path']);
+                $dirReal = realpath($dir);
+                if ($dirReal && str_starts_with($dirReal, $musicDirReal) && 
+                    is_dir($dir) && count(glob($dir . '/*')) === 0) {
+                    rmdir($dir);
+                }
             }
         }
 

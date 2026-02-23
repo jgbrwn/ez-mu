@@ -191,23 +191,43 @@ class MonochromeService
             mkdir($dir, 0755, true);
         }
 
-        // Download the FLAC file
+        // Download the FLAC file with streaming (memory efficient)
+        // Prevent PHP timeout during large downloads
+        set_time_limit(0);
+        
         $ch = curl_init($stream['url']);
         $fp = fopen($outputPath, 'wb');
+        
+        if ($fp === false) {
+            throw new Exception("Failed to open output file: {$outputPath}");
+        }
         
         curl_setopt_array($ch, [
             CURLOPT_FILE => $fp,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 300,
+            CURLOPT_TIMEOUT => 600, // 10 minutes for large FLAC files
+            CURLOPT_CONNECTTIMEOUT => 30,
+            CURLOPT_LOW_SPEED_LIMIT => 1024, // Abort if speed < 1KB/s
+            CURLOPT_LOW_SPEED_TIME => 30,    // for 30 seconds
+            CURLOPT_USERAGENT => 'EZ-MU/1.0',
         ]);
         
         $success = curl_exec($ch);
         $error = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         fclose($fp);
 
-        if (!$success || !file_exists($outputPath)) {
-            throw new Exception("Download failed: " . ($error ?: 'Unknown error'));
+        if (!$success || $httpCode >= 400) {
+            // Clean up failed download
+            if (file_exists($outputPath)) {
+                unlink($outputPath);
+            }
+            throw new Exception("Download failed (HTTP {$httpCode}): " . ($error ?: 'Unknown error'));
+        }
+        
+        if (!file_exists($outputPath) || filesize($outputPath) === 0) {
+            throw new Exception("Download resulted in empty file");
         }
 
         // Embed cover art if available
