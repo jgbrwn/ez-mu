@@ -8,6 +8,7 @@ use Slim\Views\Twig;
 use App\Services\PlaylistService;
 use App\Services\SearchService;
 use App\Services\DownloadService;
+use App\Services\QueueService;
 
 class ImportController
 {
@@ -15,17 +16,20 @@ class ImportController
     private PlaylistService $playlistService;
     private SearchService $searchService;
     private DownloadService $downloadService;
+    private QueueService $queueService;
 
     public function __construct(
         Twig $twig,
         PlaylistService $playlistService,
         SearchService $searchService,
-        DownloadService $downloadService
+        DownloadService $downloadService,
+        QueueService $queueService
     ) {
         $this->twig = $twig;
         $this->playlistService = $playlistService;
         $this->searchService = $searchService;
         $this->downloadService = $downloadService;
+        $this->queueService = $queueService;
     }
 
     /**
@@ -80,8 +84,17 @@ class ImportController
         // Parse tracks (one per line, format: "Artist - Title")
         $lines = array_filter(array_map('trim', explode("\n", $tracksText)));
         $queued = 0;
+        $skipped = 0;
         $failed = 0;
         $results = [];
+
+        // Warn for large imports
+        $totalTracks = count($lines);
+        if ($totalTracks > 100) {
+            return $this->twig->render($response, 'partials/import_status.twig', [
+                'error' => "Too many tracks ($totalTracks). Please import 100 or fewer tracks at a time.",
+            ]);
+        }
 
         foreach ($lines as $line) {
             // Clean up the line
@@ -100,6 +113,14 @@ class ImportController
 
             if (!empty($searchResults)) {
                 $best = $searchResults[0];
+                
+                // Check for duplicates
+                if ($this->queueService->isAlreadyQueued($best['video_id'])) {
+                    $skipped++;
+                    $results[] = ['track' => $line, 'status' => 'skipped', 'match' => $best['title'] . ' - ' . $best['artist']];
+                    continue;
+                }
+                
                 try {
                     $this->downloadService->queueDownload([
                         'video_id' => $best['video_id'],
@@ -120,14 +141,15 @@ class ImportController
                 $results[] = ['track' => $line, 'status' => 'not_found'];
             }
 
-            // Small delay between searches
-            usleep(500000); // 500ms
+            // Reduced delay between searches (200ms instead of 500ms)
+            usleep(200000);
         }
 
         return $this->twig->render($response, 'partials/import_status.twig', [
             'queued' => $queued,
+            'skipped' => $skipped,
             'failed' => $failed,
-            'total' => count($lines),
+            'total' => $totalTracks,
             'results' => $results,
         ]);
     }

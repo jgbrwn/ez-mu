@@ -20,9 +20,25 @@
     </form>
 </div>
 
-<div id="queue-list" class="results" hx-get="/partials/queue" hx-trigger="every 3s" hx-swap="innerHTML">
+<div id="queue-list" class="results" hx-get="/partials/queue?page={{ page }}" hx-trigger="every 3s" hx-swap="innerHTML">
     {% include 'partials/queue_list.twig' %}
 </div>
+
+{% if totalPages > 1 %}
+<div class="pagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 16px; padding-bottom: 20px;">
+    {% if page > 1 %}
+    <a href="/queue?page={{ page - 1 }}" class="page-btn">← Prev</a>
+    {% endif %}
+    
+    <span style="padding: 8px 12px; color: var(--text-secondary); font-size: 13px;">
+        Page {{ page }} of {{ totalPages }}
+    </span>
+    
+    {% if page < totalPages %}
+    <a href="/queue?page={{ page + 1 }}" class="page-btn">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

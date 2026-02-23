@@ -14,18 +14,18 @@ class QueueService
     /**
      * Get all jobs with optional status filter
      */
-    public function getJobs(?string $status = null, int $limit = 50): array
+    public function getJobs(?string $status = null, int $limit = 50, int $offset = 0): array
     {
         if ($status) {
             return $this->db->query(
-                'SELECT * FROM jobs WHERE status = ? ORDER BY created_at DESC LIMIT ?',
-                [$status, $limit]
+                'SELECT * FROM jobs WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+                [$status, $limit, $offset]
             );
         }
         
         return $this->db->query(
-            'SELECT * FROM jobs ORDER BY created_at DESC LIMIT ?',
-            [$limit]
+            'SELECT * FROM jobs ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            [$limit, $offset]
         );
     }
 
@@ -93,5 +93,28 @@ class QueueService
         } else {
             return $this->db->execute("DELETE FROM jobs WHERE status IN ('completed', 'failed')");
         }
+    }
+
+    /**
+     * Check if a track is already queued or completed (by video_id)
+     */
+    public function isAlreadyQueued(string $videoId): bool
+    {
+        $result = $this->db->queryOne(
+            "SELECT id FROM jobs WHERE video_id = ? AND status IN ('queued', 'processing', 'completed')",
+            [$videoId]
+        );
+        return $result !== null;
+    }
+
+    /**
+     * Find existing job by video_id
+     */
+    public function findByVideoId(string $videoId): ?array
+    {
+        return $this->db->queryOne(
+            "SELECT * FROM jobs WHERE video_id = ? ORDER BY created_at DESC LIMIT 1",
+            [$videoId]
+        );
     }
 }

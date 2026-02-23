@@ -4,11 +4,17 @@
 </div>
 {% else %}
 <div style="padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
-    <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+    <div style="display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
         <div style="text-align: center;">
             <div style="font-size: 24px; font-weight: 600; color: var(--accent);">{{ queued }}</div>
             <div style="font-size: 11px; color: var(--text-secondary);">Queued</div>
         </div>
+        {% if skipped is defined and skipped > 0 %}
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: #eab308;">{{ skipped }}</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Already Queued</div>
+        </div>
+        {% endif %}
         <div style="text-align: center;">
             <div style="font-size: 24px; font-weight: 600; color: var(--error);">{{ failed }}</div>
             <div style="font-size: 11px; color: var(--text-secondary);">Not Found</div>
@@ -32,6 +38,9 @@
                 {% if r.status == 'queued' %}
                 <span style="color: var(--accent);">✓</span> {{ r.track }}
                 <span style="color: var(--text-secondary);">→ {{ r.match }}</span>
+                {% elseif r.status == 'skipped' %}
+                <span style="color: #eab308;">⊘</span> {{ r.track }}
+                <span style="color: var(--text-secondary);">→ already queued</span>
                 {% elseif r.status == 'not_found' %}
                 <span style="color: var(--error);">✗</span> {{ r.track }} <span style="color: var(--text-secondary);">(not found)</span>
                 {% else %}

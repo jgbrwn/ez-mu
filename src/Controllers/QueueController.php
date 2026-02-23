@@ -29,12 +29,21 @@ class QueueController
      */
     public function index(Request $request, Response $response): Response
     {
-        $jobs = $this->queueService->getJobs();
+        $params = $request->getQueryParams();
+        $page = max(1, (int)($params['page'] ?? 1));
+        $perPage = 25;
+        
+        $jobs = $this->queueService->getJobs(null, $perPage, ($page - 1) * $perPage);
         $stats = $this->queueService->getStats();
+        $totalJobs = $stats['queued'] + $stats['processing'] + $stats['completed'] + $stats['failed'];
+        $totalPages = ceil($totalJobs / $perPage);
 
         return $this->twig->render($response, 'queue.twig', [
             'jobs' => $jobs,
             'stats' => $stats,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'perPage' => $perPage,
         ]);
     }
 
@@ -43,12 +52,20 @@ class QueueController
      */
     public function queuePartial(Request $request, Response $response): Response
     {
-        $jobs = $this->queueService->getJobs();
+        $params = $request->getQueryParams();
+        $page = max(1, (int)($params['page'] ?? 1));
+        $perPage = 25;
+        
+        $jobs = $this->queueService->getJobs(null, $perPage, ($page - 1) * $perPage);
         $stats = $this->queueService->getStats();
+        $totalJobs = $stats['queued'] + $stats['processing'] + $stats['completed'] + $stats['failed'];
+        $totalPages = ceil($totalJobs / $perPage);
 
         return $this->twig->render($response, 'partials/queue_list.twig', [
             'jobs' => $jobs,
             'stats' => $stats,
+            'page' => $page,
+            'totalPages' => $totalPages,
         ]);
     }
 

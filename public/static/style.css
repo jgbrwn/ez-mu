@@ -1409,3 +1409,29 @@ h1 {
     accent-color: var(--accent);
     cursor: pointer;
 }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-bottom: 20px;
+}
+
+.page-btn {
+    padding: 8px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+}
