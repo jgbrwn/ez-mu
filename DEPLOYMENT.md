@@ -364,9 +364,9 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
 # Copy application
 COPY . /app
 
-# Set document root to public/
+# Default to port 80 (override with SERVER_NAME env var for production)
+# For automatic HTTPS, set SERVER_NAME=yourdomain.com
 ENV SERVER_NAME=:80
-ENV FRANKENPHP_CONFIG="root * /app/public"
 
 # Create required directories
 RUN mkdir -p /app/data /app/music/Singles && \
@@ -384,7 +384,9 @@ Create a `Caddyfile` in your project root:
     order php_server before file_server
 }
 
-:80 {
+# Use your domain for automatic HTTPS (recommended for production)
+# Caddy will automatically provision and renew Let's Encrypt certificates
+yourdomain.com {
     root * /app/public
     
     # Encode responses
@@ -406,6 +408,13 @@ Create a `Caddyfile` in your project root:
 }
 ```
 
+> **Note:** Replace `yourdomain.com` with your actual domain. Caddy automatically:
+> - Provisions Let's Encrypt certificates
+> - Redirects HTTP → HTTPS  
+> - Enables HTTP/2 and HTTP/3
+>
+> For local development, use `:80` instead of a domain name.
+
 Create `compose.yaml`:
 
 ```yaml
@@ -419,8 +428,12 @@ services:
     volumes:
       - ./data:/app/data
       - ./music:/app/music
+      - ./Caddyfile:/etc/caddy/Caddyfile  # Custom Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    # For production with automatic HTTPS, set your domain:
+    # environment:
+    #   - SERVER_NAME=yourdomain.com
     restart: unless-stopped
 
 volumes:
