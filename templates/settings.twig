@@ -61,19 +61,15 @@
         <div class="settings-section-title">Downloads</div>
         <div class="settings-grid">
             <label class="settings-label">
-                <span>Convert to FLAC</span>
-                <div class="toggle-switch">
-                    <input type="checkbox" name="convert_to_flac" value="1" {% if settings.convert_to_flac == '1' %}checked{% endif %}>
-                    <span class="toggle-slider"></span>
-                </div>
-            </label>
-            <label class="settings-label">
                 <span>Organize by Artist</span>
                 <div class="toggle-switch">
                     <input type="checkbox" name="organize_by_artist" value="1" {% if settings.organize_by_artist == '1' %}checked{% endif %}>
                     <span class="toggle-slider"></span>
                 </div>
             </label>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px;">
+            All downloads from Monochrome/Tidal are lossless FLAC (16-bit/44.1kHz, ~1411 kbps).
         </div>
     </div>
 

@@ -16,13 +16,6 @@
             <div class="logo">🎵</div>
             <h1>{{ app_name }}</h1>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;" title="Convert downloads to FLAC">
-                    <span>FLAC</span>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="convertToFlac" {% if settings.convert_to_flac|default('1') == '1' %}checked{% endif %}>
-                        <span class="toggle-slider"></span>
-                    </div>
-                </label>
                 <button id="themeToggle" style="background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 16px; line-height: 1; color: var(--text-secondary);" title="Toggle theme">🌙</button>
                 <span style="font-size: 11px; color: var(--text-secondary);">v{{ version }}</span>
             </div>
