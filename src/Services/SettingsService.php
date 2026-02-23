@@ -12,6 +12,7 @@ class SettingsService
         'theme' => 'dark',
         'youtube_enabled' => '0',
         'youtube_cookies_path' => '',
+        'autoplay_next' => '0',
     ];
 
     public function __construct(Database $db)

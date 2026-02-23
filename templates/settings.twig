@@ -108,6 +108,22 @@
     </div>
 
     <div class="settings-section">
+        <div class="settings-section-title">Playback</div>
+        <div class="settings-grid">
+            <label class="settings-label">
+                <div>
+                    <span>Auto-play Next Track</span>
+                    <div style="font-size: 11px; color: var(--text-secondary);">In Library, play next track when current ends</div>
+                </div>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="autoplay_next" value="1" {% if settings.autoplay_next == '1' %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="settings-section">
         <div class="settings-section-title">Appearance</div>
         <div class="settings-grid">
             <label class="settings-label">

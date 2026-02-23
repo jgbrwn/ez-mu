@@ -6,16 +6,19 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\MusicLibrary;
+use App\Services\SettingsService;
 
 class LibraryController
 {
     private Twig $twig;
     private MusicLibrary $library;
+    private SettingsService $settings;
 
-    public function __construct(Twig $twig, MusicLibrary $library)
+    public function __construct(Twig $twig, MusicLibrary $library, SettingsService $settings)
     {
         $this->twig = $twig;
         $this->library = $library;
+        $this->settings = $settings;
     }
 
     /**
@@ -52,6 +55,7 @@ class LibraryController
             'totalPages' => $totalPages,
             'totalTracks' => $totalTracks,
             'perPage' => $perPage,
+            'autoplayNext' => $this->settings->get('autoplay_next', '0') === '1',
         ]);
     }
 

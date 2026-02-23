@@ -193,6 +193,7 @@
 const audioPlayer = document.getElementById('audioPlayer');
 const playerContainer = document.getElementById('player');
 let currentTrackId = null;
+const autoplayNext = {{ autoplayNext ? 'true' : 'false' }};
 
 function playTrack(id, title, artist, thumbnail) {
     currentTrackId = id;
@@ -209,8 +210,34 @@ function playTrack(id, title, artist, thumbnail) {
     });
 }
 
+function playNextTrack() {
+    if (!currentTrackId) return;
+    
+    // Get all track buttons in current order
+    const buttons = Array.from(document.querySelectorAll('.track-play-btn'));
+    const currentIndex = buttons.findIndex(btn => btn.dataset.id === currentTrackId);
+    
+    if (currentIndex >= 0 && currentIndex < buttons.length - 1) {
+        // Play next track
+        const nextBtn = buttons[currentIndex + 1];
+        nextBtn.click();
+    } else {
+        // Reset play button state at end of list
+        document.querySelectorAll('.track-play-btn').forEach(btn => {
+            btn.textContent = '▶';
+        });
+    }
+}
+
 audioPlayer.addEventListener('ended', function() {
-    // Could implement playlist functionality here
+    if (autoplayNext) {
+        playNextTrack();
+    } else {
+        // Reset play button state
+        document.querySelectorAll('.track-play-btn').forEach(btn => {
+            btn.textContent = '▶';
+        });
+    }
 });
 
 function toggleSelectAll() {
