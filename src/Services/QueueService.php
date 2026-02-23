@@ -120,12 +120,14 @@ class QueueService
 
     /**
      * Clear completed jobs older than X minutes
+     * Only deletes jobs that don't have library entries (to avoid FK constraint issues)
      */
     public function clearOldCompleted(int $minutes = 30): int
     {
         $cutoff = date('Y-m-d H:i:s', time() - ($minutes * 60));
         return $this->db->execute(
-            "DELETE FROM jobs WHERE status = 'completed' AND updated_at < ?",
+            "DELETE FROM jobs WHERE status = 'completed' AND completed_at < ? 
+             AND id NOT IN (SELECT job_id FROM library WHERE job_id IS NOT NULL)",
             [$cutoff]
         );
     }
