@@ -2,34 +2,49 @@
 
 A self-hosted music acquisition service built with PHP, HTMX, and Slim 4.
 
+**🌐 Shared Hosting Compatible** - Works on standard PHP hosting without shell access or special binaries.
+
 Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a Python/FastAPI app - into a lightweight PHP implementation.
 
 ## Features
 
-- **Search** - YouTube and SoundCloud search via yt-dlp
-- **Download** - Queue-based downloads with automatic FLAC conversion
-- **Library** - Browse and manage your downloaded music
-- **🎧 Play** - Stream music directly in the browser (HTML5 audio)
-- **⬇️ Export** - Select and download multiple tracks as a zip file
-- **Dark/Light Theme** - Toggle with saved preference
-- **Mobile-friendly** - Responsive design
+- **🎵 Monochrome/Tidal** - Lossless FLAC downloads from Tidal CDN (no account needed)
+- **📝 Playlist Import** - Import from Spotify, Apple Music, YouTube Music, Tidal
+- **🎧 Library & Playback** - Stream music directly in the browser (HTML5 audio)
+- **🎯 MusicBrainz** - Automatic metadata enrichment (artist, album, year)
+- **⬇️ Export** - Download multiple tracks as a zip file
+- **🌙 Dark/Light Theme** - Toggle with saved preference
+- **📱 Mobile-friendly** - Responsive design
+
+### Full Features (VPS/Dedicated)
+
+- **YouTube Search** - Via yt-dlp (requires cookies)
+- **SoundCloud Search** - Via yt-dlp
+- **Audio Fingerprinting** - AcoustID for precise metadata matching
 
 ## Tech Stack
 
-- **Backend**: PHP 8.x with Slim 4 microframework
+- **Backend**: PHP 8.1+ with Slim 4 microframework
 - **Frontend**: HTMX + Twig templates (minimal JavaScript)
-- **Database**: SQLite
-- **Audio**: yt-dlp + ffmpeg
-- **CSS**: Ported from MusicGrabber's modern dark theme
+- **Database**: SQLite (zero configuration)
+- **Audio**: Pure PHP FLAC handling (no ffmpeg required for core features)
+- **CSS**: Custom dark theme (Spotify-inspired)
 
 ## Requirements
 
-- PHP 8.1+ with extensions: sqlite3, pdo_sqlite, zip, curl, mbstring
-- Composer
-- yt-dlp (latest version recommended)
-- ffmpeg/ffprobe
+### Minimum (Shared Hosting)
 
-## Installation
+- PHP 8.1+ with extensions: `pdo_sqlite`, `curl`, `mbstring`, `zip`
+- Composer (or upload vendor folder)
+
+### Full Features (VPS)
+
+- Everything above, plus:
+- yt-dlp (for YouTube/SoundCloud)
+- ffmpeg (for audio conversion)
+- fpcalc (for audio fingerprinting)
+
+## Quick Start
 
 ```bash
 # Clone the repository
@@ -40,11 +55,13 @@ cd ez-mu
 composer install
 
 # Create directories
-mkdir -p data music/Singles var/cache
+mkdir -p data music/Singles
 
 # Start the development server
 php -S 0.0.0.0:8000 -t public
 ```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed shared hosting and production deployment instructions.
 
 ## Configuration
 
