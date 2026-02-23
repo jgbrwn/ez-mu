@@ -121,57 +121,68 @@ class PlaylistService
     }
 
     /**
-     * Fetch YouTube playlist via yt-dlp
+     * Fetch YouTube playlist via page scraping (pure PHP, no yt-dlp needed)
      */
     private function fetchYouTube(string $playlistId): array
     {
         $url = "https://www.youtube.com/playlist?list={$playlistId}";
         
-        $ytdlp = getenv('HOME') . '/.local/bin/yt-dlp';
-        if (!file_exists($ytdlp)) {
-            $ytdlp = 'yt-dlp';
+        $html = $this->httpGet($url, [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language' => 'en-US,en;q=0.9',
+        ]);
+
+        if (!$html) {
+            throw new Exception('Failed to fetch YouTube playlist page');
         }
 
-        $cmd = [
-            $ytdlp,
-            '--dump-json',
-            '--flat-playlist',
-            '--no-warnings',
-            $url
-        ];
-
-        $output = $this->runCommand($cmd, 60);
-        if (empty($output)) {
-            throw new Exception('Failed to fetch YouTube playlist');
+        // Extract ytInitialData JSON
+        if (!preg_match('/var ytInitialData = ({.*?});/', $html, $m)) {
+            throw new Exception('Could not parse YouTube playlist data');
         }
 
+        $data = json_decode($m[1], true);
+        if (!$data) {
+            throw new Exception('Invalid YouTube playlist JSON');
+        }
+
+        // Extract playlist name
+        $playlistName = $data['metadata']['playlistMetadataRenderer']['title'] ?? 'YouTube Playlist';
+
+        // Navigate to playlist content
         $tracks = [];
-        $playlistName = 'YouTube Playlist';
-        $lines = explode("\n", trim($output));
+        $tabs = $data['contents']['twoColumnBrowseResultsRenderer']['tabs'] ?? [];
+        
+        foreach ($tabs as $tab) {
+            $content = $tab['tabRenderer']['content']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents'][0]['playlistVideoListRenderer']['contents'] ?? null;
+            
+            if ($content) {
+                foreach ($content as $item) {
+                    $video = $item['playlistVideoRenderer'] ?? null;
+                    if (!$video) continue;
 
-        foreach ($lines as $line) {
-            if (empty($line)) continue;
-            $data = json_decode($line, true);
-            if (!$data) continue;
+                    $title = $video['title']['runs'][0]['text'] ?? '';
+                    $channel = $video['shortBylineText']['runs'][0]['text'] ?? '';
+                    
+                    if (empty($title)) continue;
 
-            $title = $data['title'] ?? '';
-            if (empty($title)) continue;
-
-            // Try to parse Artist - Title
-            if (preg_match('/^(.+?)\s*[-–—]\s*(.+)$/', $title, $m)) {
-                $tracks[] = trim($m[1]) . ' - ' . trim($m[2]);
-            } else {
-                $channel = $data['channel'] ?? $data['uploader'] ?? '';
-                $tracks[] = $channel ? "{$channel} - {$title}" : $title;
-            }
-
-            if ($playlistName === 'YouTube Playlist' && !empty($data['playlist_title'])) {
-                $playlistName = $data['playlist_title'];
+                    // Try to parse "Artist - Title" format from video title
+                    if (preg_match('/^(.+?)\s*[-–—]\s*(.+)$/', $title, $m)) {
+                        $tracks[] = trim($m[1]) . ' - ' . trim($m[2]);
+                    } else {
+                        // Use channel name as artist
+                        $tracks[] = $channel ? "{$channel} - {$title}" : $title;
+                    }
+                }
+                break;
             }
         }
+
+        // Also check for continuation data if playlist is long
+        // YouTube loads more videos dynamically, but first page usually has 100+
 
         if (empty($tracks)) {
-            throw new Exception('No tracks found in YouTube playlist');
+            throw new Exception('No tracks found in YouTube playlist. The playlist may be private or empty.');
         }
 
         return [
@@ -184,6 +195,7 @@ class PlaylistService
 
     /**
      * Fetch Tidal playlist via Monochrome API
+     * Note: Tidal playlist support depends on the Monochrome API availability
      */
     private function fetchTidal(string $playlistId): array
     {
@@ -191,14 +203,20 @@ class PlaylistService
         
         $response = $this->httpGet($url);
         if (!$response) {
-            throw new Exception('Failed to fetch Tidal playlist');
+            throw new Exception('Failed to fetch Tidal playlist. The Monochrome API may be unavailable.');
         }
 
         $data = json_decode($response, true);
-        $playlistData = $data['data'] ?? null;
         
-        if (!$playlistData) {
-            throw new Exception('Invalid Tidal playlist response');
+        // Check for error response
+        if (isset($data['detail'])) {
+            throw new Exception('Tidal playlist not found or not accessible. Try using a Spotify playlist instead.');
+        }
+
+        $playlistData = $data['data'] ?? $data;
+        
+        if (!$playlistData || empty($playlistData['tracks'])) {
+            throw new Exception('No tracks found in Tidal playlist. The playlist may be private.');
         }
 
         $name = $playlistData['title'] ?? 'Tidal Playlist';
@@ -206,7 +224,7 @@ class PlaylistService
 
         foreach (($playlistData['tracks'] ?? []) as $track) {
             $title = $track['title'] ?? '';
-            $artist = $track['artist']['name'] ?? '';
+            $artist = $track['artist']['name'] ?? ($track['artists'][0]['name'] ?? '');
             if ($title && $artist) {
                 $tracks[] = "{$artist} - {$title}";
             }
