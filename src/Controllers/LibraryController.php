@@ -127,11 +127,15 @@ class LibraryController
         try {
             $zipPath = $this->library->createZip($trackIds);
             
+            // Generate random 6-character hash for unique filename
+            // Uses bin2hex(random_bytes) which is available in PHP 7+ and shared hosting compatible
+            $hash = substr(bin2hex(random_bytes(3)), 0, 6);
+            
             // Use chunked streaming for zip files (shared hosting compatible)
             FileStreamer::streamFile(
                 $response,
                 $zipPath,
-                'ez-mu-download.zip',
+                "ez-mu-download-{$hash}.zip",
                 'application/zip',
                 true // Delete temp zip after streaming
             );

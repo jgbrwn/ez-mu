@@ -5,6 +5,7 @@ namespace App\Controllers;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Services\MusicLibrary;
+use App\Services\LimitedStream;
 use Slim\Psr7\Stream;
 
 class StreamController
@@ -98,13 +99,17 @@ class StreamController
         $stream = fopen($filePath, 'rb');
         fseek($stream, $start);
 
+        // Use LimitedStream to ensure we only send the requested bytes
+        // Regular Stream would read until EOF, ignoring Content-Length
+        $limitedStream = new LimitedStream($stream, $length);
+
         return $response
             ->withStatus(206) // Partial Content
             ->withHeader('Content-Type', $mimeType)
             ->withHeader('Content-Length', (string)$length)
             ->withHeader('Content-Range', "bytes {$start}-{$end}/{$fileSize}")
             ->withHeader('Accept-Ranges', 'bytes')
-            ->withBody(new Stream($stream));
+            ->withBody($limitedStream);
     }
 
     /**
