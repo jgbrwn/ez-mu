@@ -9,6 +9,7 @@ use App\Services\PlaylistService;
 use App\Services\SearchService;
 use App\Services\DownloadService;
 use App\Services\QueueService;
+use App\Services\WatchedPlaylistService;
 
 class ImportController
 {
@@ -17,19 +18,22 @@ class ImportController
     private SearchService $searchService;
     private DownloadService $downloadService;
     private QueueService $queueService;
+    private WatchedPlaylistService $watchedService;
 
     public function __construct(
         Twig $twig,
         PlaylistService $playlistService,
         SearchService $searchService,
         DownloadService $downloadService,
-        QueueService $queueService
+        QueueService $queueService,
+        WatchedPlaylistService $watchedService
     ) {
         $this->twig = $twig;
         $this->playlistService = $playlistService;
         $this->searchService = $searchService;
         $this->downloadService = $downloadService;
         $this->queueService = $queueService;
+        $this->watchedService = $watchedService;
     }
 
     /**
@@ -54,11 +58,24 @@ class ImportController
             ]);
         }
 
+        $addToWatched = !empty($data['add_to_watched']);
+
         try {
             $playlist = $this->playlistService->fetchPlaylist($url);
             
+            // Add to watched playlists if requested
+            $watchedResult = null;
+            if ($addToWatched) {
+                $watchedResult = $this->watchedService->addPlaylist($url, [
+                    'sync_mode' => 'append',
+                    'make_m3u' => true
+                ]);
+            }
+            
             return $this->twig->render($response, 'partials/import_result.twig', [
                 'playlist' => $playlist,
+                'url' => $url,
+                'watched_result' => $watchedResult,
             ]);
         } catch (\Exception $e) {
             return $this->twig->render($response, 'partials/import_result.twig', [

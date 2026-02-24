@@ -247,4 +247,53 @@ class WatchedController
             'playlist_id' => $id
         ]);
     }
+
+    /**
+     * API: Get playlist status (for JS polling)
+     */
+    public function status(Request $request, Response $response, array $args): Response
+    {
+        // Sync track statuses first
+        $this->watchedService->syncTrackStatuses();
+
+        $id = $args['id'];
+        $playlist = $this->watchedService->getPlaylist($id);
+
+        if (!$playlist) {
+            $response->getBody()->write(json_encode(['error' => 'Playlist not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        $data = [
+            'total' => (int)($playlist['total_tracks'] ?? 0),
+            'downloaded' => (int)($playlist['downloaded_tracks'] ?? 0),
+            'queued' => (int)($playlist['queued_tracks'] ?? 0),
+            'pending' => (int)($playlist['pending_tracks'] ?? 0),
+            'failed' => (int)($playlist['failed_tracks'] ?? 0),
+        ];
+
+        $response->getBody()->write(json_encode($data));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * API: Queue next batch (for JS auto-queueing)
+     */
+    public function queueBatch(Request $request, Response $response, array $args): Response
+    {
+        $id = $args['id'];
+        $result = $this->watchedService->queuePendingTracks($id, 5);
+
+        $playlist = $this->watchedService->getPlaylist($id);
+
+        $data = [
+            'queued' => $result['queued'] ?? 0,
+            'errors' => $result['errors'] ?? [],
+            'remaining_pending' => (int)($playlist['pending_tracks'] ?? 0),
+            'remaining_queued' => (int)($playlist['queued_tracks'] ?? 0),
+        ];
+
+        $response->getBody()->write(json_encode($data));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
 }

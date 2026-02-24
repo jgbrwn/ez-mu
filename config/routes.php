@@ -65,6 +65,8 @@ return function (App $app) {
     $app->post('/watched/{id}/queue', [WatchedController::class, 'queueTracks']);
     $app->post('/watched/{id}/retry', [WatchedController::class, 'retryFailed']);
     $app->post('/watched/{id}/m3u', [WatchedController::class, 'generateM3u']);
+    $app->get('/watched/{id}/status', [WatchedController::class, 'status']);
+    $app->post('/watched/{id}/queue-batch', [WatchedController::class, 'queueBatch']);
 
     // API endpoints for background processing
     $app->get('/api/queue/status', [QueueController::class, 'status']);

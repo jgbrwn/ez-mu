@@ -17,6 +17,7 @@ use App\Services\PlaylistService;
 use App\Services\MetadataService;
 use App\Controllers\SettingsController;
 use App\Controllers\WatchedController;
+use App\Controllers\ImportController;
 use App\Services\WatchedPlaylistService;
 
 return [
@@ -130,6 +131,17 @@ return [
     WatchedController::class => function (ContainerInterface $c) {
         return new WatchedController(
             $c->get(Twig::class),
+            $c->get(WatchedPlaylistService::class)
+        );
+    },
+
+    ImportController::class => function (ContainerInterface $c) {
+        return new ImportController(
+            $c->get(Twig::class),
+            $c->get(PlaylistService::class),
+            $c->get(SearchService::class),
+            $c->get(DownloadService::class),
+            $c->get(QueueService::class),
             $c->get(WatchedPlaylistService::class)
         );
     },

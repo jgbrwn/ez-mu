@@ -93,6 +93,8 @@
 
     <div id="m3u-result"></div>
 
+    <div id="auto-queue-status"></div>
+
     <div style="margin-bottom: 12px;">
         <span style="font-size: 13px; color: var(--text-secondary);">Filter: </span>
         <a href="/watched/{{ playlist.id }}" class="tab-link {{ not status_filter ? 'active' : '' }}">All</a>
@@ -125,5 +127,116 @@
     background: var(--primary);
     color: white;
 }
+#auto-queue-status {
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: none;
+}
+#auto-queue-status.active {
+    display: block;
+}
 </style>
+
+<script>
+(function() {
+    const playlistId = '{{ playlist.id }}';
+    let autoQueueActive = false;
+    let pollInterval = null;
+    
+    // Status display element
+    const statusEl = document.getElementById('auto-queue-status');
+    
+    function updateStatusDisplay(msg, isActive) {
+        if (statusEl) {
+            statusEl.textContent = msg;
+            statusEl.classList.toggle('active', isActive);
+        }
+    }
+    
+    function updateStats(data) {
+        // Update the stats display
+        const statsEl = document.getElementById('playlist-stats');
+        if (statsEl) {
+            const divs = statsEl.querySelectorAll('div > div:first-child');
+            if (divs.length >= 5) {
+                divs[0].textContent = data.total;
+                divs[1].textContent = data.downloaded;
+                divs[2].textContent = data.queued;
+                divs[3].textContent = data.pending;
+                divs[4].textContent = data.failed;
+            }
+        }
+    }
+    
+    async function checkAndQueueNext() {
+        if (!autoQueueActive) return;
+        
+        try {
+            // Get current status
+            const statusRes = await fetch(`/watched/${playlistId}/status`);
+            const status = await statusRes.json();
+            
+            updateStats(status);
+            
+            // If no queued tracks and there are pending tracks, queue next batch
+            if (status.queued === 0 && status.pending > 0) {
+                updateStatusDisplay(`⏳ Queueing next batch... (${status.pending} pending)`, true);
+                
+                const queueRes = await fetch(`/watched/${playlistId}/queue-batch`, { method: 'POST' });
+                const queueData = await queueRes.json();
+                
+                if (queueData.queued > 0) {
+                    updateStatusDisplay(`✅ Queued ${queueData.queued} tracks. ${queueData.remaining_pending} pending, ${queueData.remaining_queued} in queue.`, true);
+                } else if (queueData.remaining_pending === 0) {
+                    // All done!
+                    stopAutoQueue();
+                    updateStatusDisplay('✅ All tracks have been queued!', true);
+                    setTimeout(() => updateStatusDisplay('', false), 3000);
+                }
+            } else if (status.queued > 0) {
+                updateStatusDisplay(`🔄 Processing... ${status.queued} in queue, ${status.pending} pending`, true);
+            } else if (status.pending === 0) {
+                // All done
+                stopAutoQueue();
+                updateStatusDisplay('✅ All tracks processed!', true);
+                setTimeout(() => updateStatusDisplay('', false), 3000);
+            }
+        } catch (err) {
+            console.error('Auto-queue error:', err);
+            updateStatusDisplay('⚠️ Error checking queue status', true);
+        }
+    }
+    
+    function startAutoQueue() {
+        if (autoQueueActive) return;
+        autoQueueActive = true;
+        updateStatusDisplay('🚀 Starting auto-queue...', true);
+        checkAndQueueNext();
+        pollInterval = setInterval(checkAndQueueNext, 5000); // Check every 5 seconds
+    }
+    
+    function stopAutoQueue() {
+        autoQueueActive = false;
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+    
+    // Expose for button click
+    window.startAutoQueue = startAutoQueue;
+    window.stopAutoQueue = stopAutoQueue;
+    
+    // Auto-start if there are pending tracks and user clicked "Queue Pending"
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.pathInfo.requestPath.includes('/queue')) {
+            // User triggered queueing, start auto-queue
+            startAutoQueue();
+        }
+    });
+})();
+</script>
 {% endblock %}
