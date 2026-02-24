@@ -10,10 +10,10 @@
 {% endfor %}
 {% endif %}
 
-{# Out-of-band updates for stats #}
+{# Out-of-band updates for stats - use outerHTML to replace entire element #}
 {% if stats is defined %}
-<div id="queue-stats" hx-swap-oob="true">
+<h2 id="queue-stats" hx-swap-oob="outerHTML" style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
     {{ stats.queued }} queued • {{ stats.processing }} processing • {{ stats.completed }} completed • {{ stats.failed }} failed
-</div>
-<span id="queue-badge" hx-swap-oob="true">({{ stats.queued + stats.processing }})</span>
+</h2>
+<span id="queue-badge" hx-swap-oob="outerHTML" style="opacity: 0.6;">({{ stats.queued + stats.processing }})</span>
 {% endif %}

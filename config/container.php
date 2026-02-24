@@ -19,6 +19,7 @@ use App\Controllers\SettingsController;
 use App\Controllers\WatchedController;
 use App\Controllers\ImportController;
 use App\Services\WatchedPlaylistService;
+use App\Twig\AppExtension;
 
 return [
     // Configuration
@@ -40,6 +41,12 @@ return [
         $settings = $c->get('settings');
         $twig->getEnvironment()->addGlobal('app_name', $settings['app_name']);
         $twig->getEnvironment()->addGlobal('version', $settings['version']);
+        
+        // Add extension for global stats (library count, queue count)
+        $twig->addExtension(new AppExtension(
+            $c->get(QueueService::class),
+            $c->get(MusicLibrary::class)
+        ));
         
         return $twig;
     },

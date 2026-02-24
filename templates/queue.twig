@@ -5,8 +5,8 @@
 {% block content %}
 <div class="tabs">
     <a href="/" class="tab">Search</a>
-    <a href="/library" class="tab">Library</a>
-    <a href="/queue" class="tab active">Queue <span id="queue-badge" style="opacity: 0.6;">({{ stats.queued + stats.processing }})</span></a>
+    <a href="/library" class="tab">Library <span style="opacity: 0.6;">({{ library_stats.track_count }})</span></a>
+    <a href="/queue" class="tab active">Queue <span id="queue-badge" style="opacity: 0.6;">({{ queue_stats.queued + queue_stats.processing }})</span></a>
     <a href="/import" class="tab">Import</a>
     <a href="/watched" class="tab">Watched</a>
     <a href="/settings" class="tab">Settings</a>
