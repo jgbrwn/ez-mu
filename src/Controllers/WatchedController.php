@@ -97,12 +97,21 @@ class WatchedController
             ]);
         }
 
-        $statusFilter = $request->getQueryParams()['status'] ?? null;
-        $tracks = $this->watchedService->getPlaylistTracks($id, $statusFilter);
+        $queryParams = $request->getQueryParams();
+        $statusFilter = $queryParams['status'] ?? null;
+        $page = max(1, (int)($queryParams['page'] ?? 1));
+        
+        $trackData = $this->watchedService->getPlaylistTracks($id, $statusFilter, $page, 25);
 
         return $this->view->render($response, 'watched/view.twig', [
             'playlist' => $playlist,
-            'tracks' => $tracks,
+            'tracks' => $trackData['tracks'],
+            'pagination' => [
+                'page' => $trackData['page'],
+                'total_pages' => $trackData['total_pages'],
+                'total' => $trackData['total'],
+                'per_page' => $trackData['per_page']
+            ],
             'status_filter' => $statusFilter,
             'active_page' => 'watched'
         ]);
@@ -203,12 +212,17 @@ class WatchedController
         $result = $this->watchedService->queuePendingTracks($id, 5);
 
         $playlist = $this->watchedService->getPlaylist($id);
-        $tracks = $this->watchedService->getPlaylistTracks($id);
+        $trackData = $this->watchedService->getPlaylistTracks($id, null, 1, 25);
 
         return $this->view->render($response, 'watched/_queue_result.twig', [
             'result' => $result,
             'playlist' => $playlist,
-            'tracks' => $tracks
+            'tracks' => $trackData['tracks'],
+            'pagination' => [
+                'page' => $trackData['page'],
+                'total_pages' => $trackData['total_pages'],
+                'total' => $trackData['total']
+            ]
         ]);
     }
 
@@ -225,11 +239,16 @@ class WatchedController
         }
 
         $playlist = $this->watchedService->getPlaylist($id);
-        $tracks = $this->watchedService->getPlaylistTracks($id);
+        $trackData = $this->watchedService->getPlaylistTracks($id, null, 1, 25);
 
         return $this->view->render($response, 'watched/_tracks_list.twig', [
             'playlist' => $playlist,
-            'tracks' => $tracks,
+            'tracks' => $trackData['tracks'],
+            'pagination' => [
+                'page' => $trackData['page'],
+                'total_pages' => $trackData['total_pages'],
+                'total' => $trackData['total']
+            ],
             'reset_count' => $result['reset_count']
         ]);
     }

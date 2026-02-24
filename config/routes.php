@@ -47,6 +47,7 @@ return function (App $app) {
     $app->get('/import', [ImportController::class, 'index']);
     $app->post('/import/fetch', [ImportController::class, 'fetchPlaylist']);
     $app->post('/import/tracks', [ImportController::class, 'importTracks']);
+    $app->post('/import/batch/{id}', [ImportController::class, 'importBatch']);
     
     // Settings
     $app->get('/settings', [SettingsController::class, 'index']);

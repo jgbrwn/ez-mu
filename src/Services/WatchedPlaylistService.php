@@ -39,6 +39,28 @@ class WatchedPlaylistService
      * Parse track string/array into normalized format
      * Handles both "Artist - Title" strings and associative arrays
      */
+    /**
+     * Check if a track is already in the library (by artist/title fuzzy match)
+     */
+    private function isTrackInLibrary(string $artist, string $title): bool
+    {
+        // Normalize for comparison
+        $artistNorm = strtolower(trim($artist));
+        $titleNorm = strtolower(trim($title));
+        
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as count FROM library 
+            WHERE LOWER(artist) = ? AND LOWER(title) = ?
+        ");
+        $stmt->execute([$artistNorm, $titleNorm]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return ($result['count'] ?? 0) > 0;
+    }
+
+    /**
+     * Parse track string/array into normalized format
+     */
     private function parseTrack($track): array
     {
         if (is_string($track)) {
@@ -78,6 +100,46 @@ class WatchedPlaylistService
 
     /**
      * Add a new watched playlist
+     */
+    /**
+     * Add only the playlist entry (no tracks) - used when importing
+     * Tracks will be populated on first refresh
+     */
+    public function addPlaylistEntryOnly(string $url, array $options = []): array
+    {
+        $platform = $this->detectPlatform($url);
+        if (!$platform) {
+            return ['success' => false, 'error' => 'Unsupported playlist URL'];
+        }
+
+        $id = bin2hex(random_bytes(8));
+        $name = $options['name'] ?? 'Untitled Playlist';
+        $syncMode = $options['sync_mode'] ?? 'append';
+        $makeM3u = isset($options['make_m3u']) ? (int)$options['make_m3u'] : 1;
+        $refreshInterval = $options['refresh_interval_hours'] ?? 24;
+
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO watched_playlists (id, url, name, platform, sync_mode, make_m3u, refresh_interval_hours, last_track_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+            ");
+            $stmt->execute([$id, $url, $name, $platform, $syncMode, $makeM3u, $refreshInterval]);
+
+            return [
+                'success' => true,
+                'playlist_id' => $id,
+                'name' => $name,
+                'tracks_count' => 0,
+                'platform' => $platform,
+                'message' => 'Playlist will be populated on first refresh after import completes'
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Add a new watched playlist with tracks
      */
     public function addPlaylist(string $url, array $options = []): array
     {
@@ -185,8 +247,24 @@ class WatchedPlaylistService
     /**
      * Get tracks for a playlist
      */
-    public function getPlaylistTracks(string $playlistId, ?string $statusFilter = null): array
+    public function getPlaylistTracks(string $playlistId, ?string $statusFilter = null, int $page = 1, int $perPage = 25): array
     {
+        $offset = ($page - 1) * $perPage;
+        
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM watched_playlist_tracks WHERE playlist_id = ?";
+        $params = [$playlistId];
+        
+        if ($statusFilter) {
+            $countSql .= " AND status = ?";
+            $params[] = $statusFilter;
+        }
+        
+        $stmt = $this->db->prepare($countSql);
+        $stmt->execute($params);
+        $total = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Get paginated tracks
         $sql = "SELECT * FROM watched_playlist_tracks WHERE playlist_id = ?";
         $params = [$playlistId];
 
@@ -195,11 +273,21 @@ class WatchedPlaylistService
             $params[] = $statusFilter;
         }
 
-        $sql .= " ORDER BY added_at DESC";
+        $sql .= " ORDER BY added_at DESC LIMIT ? OFFSET ?";
+        $params[] = $perPage;
+        $params[] = $offset;
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $tracks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'tracks' => $tracks,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => (int)ceil($total / $perPage)
+        ];
     }
 
     /**
@@ -305,12 +393,16 @@ class WatchedPlaylistService
                 $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$existing) {
-                    // New track
+                    // New track - check if already in library
+                    $alreadyDownloaded = $this->isTrackInLibrary($artist, $title);
+                    $status = $alreadyDownloaded ? 'downloaded' : 'pending';
+                    
                     $stmt = $this->db->prepare("
-                        INSERT INTO watched_playlist_tracks (playlist_id, track_hash, artist, title, video_id, status)
-                        VALUES (?, ?, ?, ?, ?, 'pending')
+                        INSERT INTO watched_playlist_tracks (playlist_id, track_hash, artist, title, video_id, status, downloaded_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$id, $trackHash, $artist, $title, $parsed['video_id']]);
+                    $downloadedAt = $alreadyDownloaded ? date('Y-m-d H:i:s') : null;
+                    $stmt->execute([$id, $trackHash, $artist, $title, $parsed['video_id'], $status, $downloadedAt]);
                     $newTracks++;
                 } elseif ($existing['removed_at']) {
                     // Track was previously removed but is back (re-added upstream)

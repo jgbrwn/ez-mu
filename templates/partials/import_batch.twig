@@ -1,0 +1,99 @@
+<div id="batch-import-container" data-import-id="{{ import_id }}" data-total="{{ total }}">
+    <div style="padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+                <div style="font-size: 15px; font-weight: 600;">Importing {{ total }} tracks...</div>
+                <div id="import-progress-text" style="font-size: 13px; color: var(--text-secondary);">
+                    Starting import...
+                </div>
+            </div>
+            <button id="cancel-import-btn" class="btn btn-small" style="display: none;">Cancel</button>
+        </div>
+        
+        <div style="background: var(--border); border-radius: 4px; height: 8px; margin-bottom: 16px; overflow: hidden;">
+            <div id="import-progress-bar" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s;"></div>
+        </div>
+        
+        <div id="import-stats" style="display: flex; gap: 20px; font-size: 13px; margin-bottom: 16px;">
+            <span>✅ Queued: <strong id="stat-queued">0</strong></span>
+            <span>⏭ Skipped: <strong id="stat-skipped">0</strong></span>
+            <span>⚠️ Failed: <strong id="stat-failed">0</strong></span>
+        </div>
+        
+        <div id="import-results" style="max-height: 300px; overflow-y: auto; font-size: 13px;">
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const container = document.getElementById('batch-import-container');
+    const importId = container.dataset.importId;
+    const total = parseInt(container.dataset.total);
+    
+    const progressBar = document.getElementById('import-progress-bar');
+    const progressText = document.getElementById('import-progress-text');
+    const resultsDiv = document.getElementById('import-results');
+    const statQueued = document.getElementById('stat-queued');
+    const statSkipped = document.getElementById('stat-skipped');
+    const statFailed = document.getElementById('stat-failed');
+    
+    let cancelled = false;
+    
+    async function processNextBatch() {
+        if (cancelled) return;
+        
+        try {
+            const res = await fetch(`/import/batch/${importId}`, { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.error) {
+                progressText.textContent = 'Error: ' + data.error;
+                return;
+            }
+            
+            // Update progress
+            const percent = Math.round((data.processed / total) * 100);
+            progressBar.style.width = percent + '%';
+            progressText.textContent = `Processed ${data.processed} of ${total} tracks (${percent}%)`;
+            
+            // Update stats
+            statQueued.textContent = data.queued;
+            statSkipped.textContent = data.skipped;
+            statFailed.textContent = data.failed;
+            
+            // Add batch results to list
+            data.batch_results.forEach(result => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 6px 0; border-bottom: 1px solid var(--border);';
+                
+                let icon = '❓';
+                let color = 'var(--text-secondary)';
+                if (result.status === 'queued') { icon = '✅'; color = 'var(--success)'; }
+                else if (result.status === 'skipped') { icon = '⏭'; color = 'var(--warning)'; }
+                else if (result.status === 'failed' || result.status === 'not_found') { icon = '⚠️'; color = 'var(--error)'; }
+                
+                div.innerHTML = `<span style="color: ${color};">${icon}</span> ${result.track}`;
+                if (result.match) {
+                    div.innerHTML += ` <span style="color: var(--text-muted); font-size: 11px;">→ ${result.match}</span>`;
+                }
+                resultsDiv.appendChild(div);
+            });
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            
+            // Continue or finish
+            if (!data.complete) {
+                setTimeout(processNextBatch, 500); // Small delay between batches
+            } else {
+                progressText.innerHTML = `<span style="color: var(--success);">✅ Import complete!</span> ${data.queued} queued, ${data.skipped} skipped, ${data.failed} failed.`;
+            }
+        } catch (err) {
+            console.error('Import batch error:', err);
+            progressText.textContent = 'Error processing import. Please try again.';
+        }
+    }
+    
+    // Start processing
+    processNextBatch();
+})();
+</script>
