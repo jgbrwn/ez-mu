@@ -1,0 +1,49 @@
+{% if reset_count is defined and reset_count > 0 %}
+<div style="margin-bottom: 12px; padding: 10px; background: rgba(29, 185, 84, 0.1); border-radius: 6px; color: var(--success); font-size: 13px;">
+    ↻ Reset {{ reset_count }} failed tracks to pending and queued for retry.
+</div>
+{% endif %}
+
+{% if tracks|length == 0 %}
+<div class="empty-state">
+    <p style="color: var(--text-secondary);">No tracks found{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+</div>
+{% else %}
+<table class="queue-table">
+    <thead>
+        <tr>
+            <th>Artist</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Added</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for track in tracks %}
+        <tr class="{{ track.removed_at ? 'removed' : '' }}">
+            <td>{{ track.artist }}</td>
+            <td>{{ track.title }}</td>
+            <td>
+                {% if track.status == 'downloaded' %}
+                <span style="color: var(--success);">✅ Downloaded</span>
+                {% elseif track.status == 'queued' %}
+                <span style="color: var(--warning);">🔃 Queued</span>
+                {% elseif track.status == 'pending' %}
+                <span style="color: var(--text-secondary);">Pending</span>
+                {% elseif track.status == 'failed' %}
+                <span style="color: var(--error);">⚠️ Failed</span>
+                {% else %}
+                {{ track.status }}
+                {% endif %}
+                {% if track.removed_at %}
+                <span style="color: var(--text-muted); font-size: 11px;">(removed from source)</span>
+                {% endif %}
+            </td>
+            <td style="font-size: 12px; color: var(--text-secondary);">
+                {{ track.added_at|slice(0, 10) }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}

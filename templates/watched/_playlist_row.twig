@@ -1,0 +1,68 @@
+<tr id="playlist-row-{{ playlist.id }}" class="{{ not playlist.enabled ? 'disabled' : '' }}">
+    <td>
+        <a href="/watched/{{ playlist.id }}" style="color: var(--primary); text-decoration: none;">
+            {{ playlist.name }}
+        </a>
+        {% if playlist.make_m3u %}
+        <span title="M3U enabled" style="opacity: 0.5; font-size: 12px;">🎵</span>
+        {% endif %}
+        {% if playlist.sync_mode == 'mirror' %}
+        <span title="Mirror mode" style="opacity: 0.5; font-size: 12px;">🔄</span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="source-badge {{ playlist.platform }}">
+            {{ playlist.platform|capitalize }}
+        </span>
+    </td>
+    <td>
+        <span style="color: var(--success);">{{ playlist.downloaded_tracks|default(0) }}</span>
+        / {{ playlist.total_tracks|default(0) }}
+        {% if playlist.queued_tracks > 0 %}
+        <span style="color: var(--text-secondary);">(🔃{{ playlist.queued_tracks }})</span>
+        {% endif %}
+        {% if playlist.failed_tracks > 0 %}
+        <span style="color: var(--error);">⚠️{{ playlist.failed_tracks }}</span>
+        {% endif %}
+    </td>
+    <td style="color: var(--text-secondary); font-size: 12px;">
+        {% if playlist.last_checked %}
+        {{ playlist.last_checked }}
+        {% else %}
+        Never
+        {% endif %}
+    </td>
+    <td>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button 
+                class="btn btn-small"
+                hx-post="/watched/{{ playlist.id }}/refresh"
+                hx-target="#playlist-row-{{ playlist.id }}"
+                hx-swap="outerHTML"
+                hx-indicator="#refresh-{{ playlist.id }}"
+                title="Refresh now"
+            >
+                🔄
+                <span id="refresh-{{ playlist.id }}" class="htmx-indicator">⏳</span>
+            </button>
+            <button 
+                class="btn btn-small {{ playlist.enabled ? '' : 'btn-muted' }}"
+                hx-post="/watched/{{ playlist.id }}/toggle"
+                hx-target="#playlist-row-{{ playlist.id }}"
+                hx-swap="outerHTML"
+                title="{{ playlist.enabled ? 'Disable' : 'Enable' }}"
+            >
+                {{ playlist.enabled ? '✓' : '✗' }}
+            </button>
+            <button 
+                class="btn btn-small btn-danger"
+                hx-delete="/watched/{{ playlist.id }}"
+                hx-target="#playlist-list"
+                hx-confirm="Delete '{{ playlist.name }}'? This won't delete downloaded files."
+                title="Delete"
+            >
+                🗑️
+            </button>
+        </div>
+    </td>
+</tr>

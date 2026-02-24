@@ -1,0 +1,129 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ playlist.name }} - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab">Library</a>
+    <a href="/queue" class="tab">Queue</a>
+    <a href="/import" class="tab">Import</a>
+    <a href="/watched" class="tab active">Watched</a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div class="settings-section">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+        <div>
+            <a href="/watched" style="color: var(--text-secondary); text-decoration: none; font-size: 13px;">← Back to list</a>
+            <h2 style="margin: 8px 0 4px 0;">{{ playlist.name }}</h2>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary);">
+                <span class="source-badge {{ playlist.platform }}">{{ playlist.platform|capitalize }}</span>
+                <span>{{ playlist.sync_mode|capitalize }} mode</span>
+                {% if playlist.make_m3u %}<span>🎵 M3U enabled</span>{% endif %}
+                <span>Refresh: every {{ playlist.refresh_interval_hours }}h</span>
+                <span>{{ playlist.enabled ? '✅ Active' : '⛔ Paused' }}</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button 
+                class="btn"
+                hx-post="/watched/{{ playlist.id }}/refresh"
+                hx-target="#playlist-stats"
+                hx-indicator="#action-spinner"
+            >
+                🔄 Refresh Now
+            </button>
+            {% if playlist.pending_tracks > 0 %}
+            <button 
+                class="btn"
+                hx-post="/watched/{{ playlist.id }}/queue"
+                hx-target="#tracks-container"
+                hx-indicator="#action-spinner"
+            >
+                ⏬ Queue Pending ({{ playlist.pending_tracks }})
+            </button>
+            {% endif %}
+            {% if playlist.failed_tracks > 0 %}
+            <button 
+                class="btn"
+                hx-post="/watched/{{ playlist.id }}/retry"
+                hx-target="#tracks-container"
+                hx-indicator="#action-spinner"
+            >
+                🔁 Retry {{ playlist.failed_tracks }} Failed
+            </button>
+            {% endif %}
+            {% if playlist.make_m3u %}
+            <button 
+                class="btn"
+                hx-post="/watched/{{ playlist.id }}/m3u"
+                hx-target="#m3u-result"
+                hx-indicator="#action-spinner"
+            >
+                🎵 Generate M3U
+            </button>
+            {% endif %}
+            <span id="action-spinner" class="htmx-indicator">⏳</span>
+        </div>
+    </div>
+
+    <div id="playlist-stats" style="display: flex; gap: 20px; padding: 12px; background: var(--card-bg); border-radius: 8px; margin-bottom: 16px;">
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold;">{{ playlist.total_tracks|default(0) }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Total</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: var(--success);">{{ playlist.downloaded_tracks|default(0) }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Downloaded</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: var(--warning);">{{ playlist.queued_tracks|default(0) }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Queued</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold;">{{ playlist.pending_tracks|default(0) }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Pending</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: var(--error);">{{ playlist.failed_tracks|default(0) }}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Failed</div>
+        </div>
+    </div>
+
+    <div id="m3u-result"></div>
+
+    <div style="margin-bottom: 12px;">
+        <span style="font-size: 13px; color: var(--text-secondary);">Filter: </span>
+        <a href="/watched/{{ playlist.id }}" class="tab-link {{ not status_filter ? 'active' : '' }}">All</a>
+        <a href="/watched/{{ playlist.id }}?status=downloaded" class="tab-link {{ status_filter == 'downloaded' ? 'active' : '' }}">Downloaded</a>
+        <a href="/watched/{{ playlist.id }}?status=queued" class="tab-link {{ status_filter == 'queued' ? 'active' : '' }}">Queued</a>
+        <a href="/watched/{{ playlist.id }}?status=pending" class="tab-link {{ status_filter == 'pending' ? 'active' : '' }}">Pending</a>
+        <a href="/watched/{{ playlist.id }}?status=failed" class="tab-link {{ status_filter == 'failed' ? 'active' : '' }}">Failed</a>
+    </div>
+
+    <div id="tracks-container">
+        {% include 'watched/_tracks_list.twig' %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.tab-link {
+    display: inline-block;
+    padding: 4px 10px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.tab-link:hover {
+    background: var(--card-bg);
+}
+.tab-link.active {
+    background: var(--primary);
+    color: white;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.twig' %}
+
+{% block title %}Error - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab">Library</a>
+    <a href="/queue" class="tab">Queue</a>
+    <a href="/import" class="tab">Import</a>
+    <a href="/watched" class="tab">Watched</a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div class="settings-section" style="text-align: center; padding: 40px;">
+    <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+    <h2 style="margin-bottom: 16px;">{{ message|default('Something went wrong') }}</h2>
+    <a href="/" class="btn btn-primary">Go Home</a>
+</div>
+{% endblock %}

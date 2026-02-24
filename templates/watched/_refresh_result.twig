@@ -1,0 +1,11 @@
+{% if error %}
+{# Return a row with error state #}
+<tr id="playlist-row-{{ playlist_id }}">
+    <td colspan="5" style="color: var(--error);">
+        ⚠️ Refresh failed: {{ error }}
+    </td>
+</tr>
+{% elseif playlist %}
+{# Return the updated row #}
+{% include 'watched/_playlist_row.twig' with {'playlist': playlist} %}
+{% endif %}

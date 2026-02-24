@@ -1,0 +1,14 @@
+{# Show updated playlist list with summary #}
+{% if results|length > 0 %}
+<div style="margin-bottom: 12px; padding: 10px; background: var(--card-bg); border-radius: 6px; font-size: 13px;">
+    Refreshed {{ results|length }} playlist(s):
+    {% for r in results %}
+    <span style="color: {{ r.success ? 'var(--success)' : 'var(--error)' }};">
+        {{ r.name }}
+        {% if r.success %}(+{{ r.new_tracks }}){% else %}(⚠️){% endif %}
+    </span>{% if not loop.last %}, {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% include 'watched/_playlist_list.twig' %}

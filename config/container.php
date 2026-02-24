@@ -16,6 +16,8 @@ use App\Services\MonochromeService;
 use App\Services\PlaylistService;
 use App\Services\MetadataService;
 use App\Controllers\SettingsController;
+use App\Controllers\WatchedController;
+use App\Services\WatchedPlaylistService;
 
 return [
     // Configuration
@@ -112,6 +114,23 @@ return [
             $c->get(SettingsService::class),
             $c->get(MusicLibrary::class),
             $c
+        );
+    },
+
+    WatchedPlaylistService::class => function (ContainerInterface $c) {
+        return new WatchedPlaylistService(
+            $c->get(Database::class)->getPdo(),
+            $c->get(PlaylistService::class),
+            $c->get(QueueService::class),
+            $c->get(DownloadService::class),
+            $c->get(SearchService::class)
+        );
+    },
+
+    WatchedController::class => function (ContainerInterface $c) {
+        return new WatchedController(
+            $c->get(Twig::class),
+            $c->get(WatchedPlaylistService::class)
         );
     },
 ];

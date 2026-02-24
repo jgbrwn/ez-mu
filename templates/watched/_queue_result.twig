@@ -1,0 +1,33 @@
+{% if result.queued > 0 %}
+<div style="margin-bottom: 12px; padding: 10px; background: rgba(29, 185, 84, 0.1); border-radius: 6px; font-size: 13px;">
+    <span style="color: var(--success);">✅ Queued {{ result.queued }} tracks for download.</span>
+    {% if result.errors|length > 0 %}
+    <br><span style="color: var(--warning);">{{ result.errors|length }} tracks had issues.</span>
+    {% endif %}
+    {% if playlist and playlist.pending_tracks > 0 %}
+    <br><span style="color: var(--text-secondary);">{{ playlist.pending_tracks }} tracks still pending.</span>
+    <button 
+        class="btn btn-small"
+        style="margin-left: 10px;"
+        hx-post="/watched/{{ playlist.id }}/queue"
+        hx-target="#tracks-container"
+        hx-swap="innerHTML"
+    >
+        Queue More
+    </button>
+    {% endif %}
+</div>
+{% elseif result.queued == 0 and (result.errors|length == 0) %}
+<div style="margin-bottom: 12px; padding: 10px; background: var(--card-bg); border-radius: 6px; color: var(--text-secondary); font-size: 13px;">
+    No tracks to queue (all tracks may already be downloaded or in queue).
+</div>
+{% else %}
+<div style="margin-bottom: 12px; padding: 10px; background: var(--error-bg); border-radius: 6px; color: var(--error); font-size: 13px;">
+    ⚠️ Failed to queue tracks.
+    {% if result.errors|length > 0 %}
+    <br>Errors: {{ result.errors|join(', ') }}
+    {% endif %}
+</div>
+{% endif %}
+
+{% include 'watched/_tracks_list.twig' with {'tracks': tracks} %}

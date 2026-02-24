@@ -1,0 +1,22 @@
+{% if playlists|length == 0 %}
+<div class="empty-state">
+    <p style="color: var(--text-secondary);">No watched playlists yet. Add one above!</p>
+</div>
+{% else %}
+<table class="queue-table">
+    <thead>
+        <tr>
+            <th>Playlist</th>
+            <th>Platform</th>
+            <th>Progress</th>
+            <th>Last Checked</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for playlist in playlists %}
+        {% include 'watched/_playlist_row.twig' with {'playlist': playlist} %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}

@@ -1,0 +1,96 @@
+{% extends 'base.twig' %}
+
+{% block title %}Watched Playlists - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="tabs">
+    <a href="/" class="tab">Search</a>
+    <a href="/library" class="tab">Library</a>
+    <a href="/queue" class="tab">Queue</a>
+    <a href="/import" class="tab">Import</a>
+    <a href="/watched" class="tab active">Watched</a>
+    <a href="/settings" class="tab">Settings</a>
+</div>
+
+<div class="settings-section">
+    <div class="settings-section-title">Add Watched Playlist</div>
+    <p class="settings-description">Monitor a playlist for new tracks. Supported: Spotify, YouTube, Amazon Music, Tidal.</p>
+    
+    <form hx-post="/watched/add" hx-target="#add-result" hx-indicator="#add-spinner">
+        <div class="form-group">
+            <label>Playlist URL</label>
+            <input type="url" name="url" class="settings-input" placeholder="https://open.spotify.com/playlist/..." required>
+        </div>
+        
+        <div class="form-group">
+            <label>Custom Name (optional)</label>
+            <input type="text" name="name" class="settings-input" placeholder="Leave blank to use playlist name">
+        </div>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px;">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+                <label>Sync Mode</label>
+                <select name="sync_mode" class="settings-input">
+                    <option value="append">Append (keep old tracks)</option>
+                    <option value="mirror">Mirror (sync with source)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+                <label>Refresh Interval</label>
+                <select name="refresh_interval" class="settings-input">
+                    <option value="6">Every 6 hours</option>
+                    <option value="12">Every 12 hours</option>
+                    <option value="24" selected>Daily</option>
+                    <option value="168">Weekly</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="make_m3u" checked>
+                Generate M3U playlist file
+            </label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Add & Start Watching</button>
+        <span id="add-spinner" class="htmx-indicator" style="margin-left: 10px;">⏳</span>
+    </form>
+    
+    <div id="add-result"></div>
+</div>
+
+<div class="settings-section">
+    <div class="settings-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Watched Playlists</span>
+        {% if due_for_refresh > 0 %}
+        <button 
+            class="btn btn-small"
+            hx-post="/watched/refresh-all"
+            hx-target="#playlist-list"
+            hx-indicator="#refresh-all-spinner"
+        >
+            🔄 Refresh {{ due_for_refresh }} Due
+            <span id="refresh-all-spinner" class="htmx-indicator">⏳</span>
+        </button>
+        {% endif %}
+    </div>
+    
+    <div id="playlist-list">
+        {% include 'watched/_playlist_list.twig' %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => toast.className = 'toast', 3000);
+}
+</script>
+{% endblock %}

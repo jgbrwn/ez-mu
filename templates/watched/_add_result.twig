@@ -1,0 +1,18 @@
+{% if error %}
+<div class="error-message" style="margin-top: 12px; padding: 12px; background: var(--error-bg); border-radius: 6px; color: var(--error);">
+    ⚠️ {{ error }}
+</div>
+{% elseif success %}
+<div class="success-message" style="margin-top: 12px; padding: 12px; background: rgba(29, 185, 84, 0.1); border-radius: 6px; color: var(--success);">
+    ✅ Added <strong>{{ playlist_name }}</strong> with {{ tracks_count }} tracks.
+    {% if queued_count > 0 %}
+    Queued {{ queued_count }} for download.
+    {% endif %}
+    <br>
+    <a href="/watched/{{ playlist_id }}" style="color: var(--primary);">View playlist →</a>
+</div>
+<script>
+    // Reload playlist list
+    htmx.ajax('GET', '/watched', {target: '#playlist-list', select: '#playlist-list > *', swap: 'innerHTML'});
+</script>
+{% endif %}
