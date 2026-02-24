@@ -113,6 +113,9 @@ Settings are stored in SQLite and can be managed via the Settings page:
 3. Track will be queued and processed automatically
 4. Find completed downloads in the Library tab
 
+> **Note:** Downloaded/queued items fade from search results after 4 seconds.
+> Completed jobs are automatically cleared from the Queue after 30 minutes.
+
 ### Library & Playback
 
 1. Go to the Library tab

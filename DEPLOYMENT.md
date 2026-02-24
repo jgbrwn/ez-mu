@@ -574,6 +574,7 @@ Available settings:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `ACOUSTID_API_KEY` | API key for audio fingerprinting | No (VPS only) |
+| `CRON_SECRET` | Secret key for `/cron/process` endpoint | No (recommended) |
 
 Get an AcoustID API key at: https://acoustid.org/api-key
 
@@ -688,11 +689,92 @@ Visit `/settings` to see which features are available on your hosting.
 
 ## Security Recommendations
 
-1. **Always use password protection** - Either .htaccess or DirectAdmin/cPanel
+### Essential Security Measures
+
+1. **Always use password protection** - Either .htaccess, DirectAdmin/cPanel, or reverse proxy auth
 2. **Keep .htpasswd outside public/** - Store in app root, not web-accessible
-3. **Use HTTPS** - Get a free SSL cert from Let's Encrypt
+3. **Use HTTPS** - Get a free SSL cert from Let's Encrypt (automatic with Caddy/FrankenPHP)
 4. **Regular backups** - Backup `data/` and `music/` directories
 5. **Keep updated** - Update yt-dlp regularly for best results
+
+### Protected Paths
+
+The following directories/files should NEVER be publicly accessible:
+
+| Path | Contains | Protection |
+|------|----------|------------|
+| `data/` | SQLite database, settings | Outside web root |
+| `config/` | PHP configuration | Outside web root |
+| `vendor/` | Composer dependencies | Outside web root |
+| `.env` | API keys, secrets | Outside web root + .htaccess |
+| `.htpasswd` | Password hashes | Outside web root |
+| `music/` | Downloaded audio files | Outside web root (streamed via PHP) |
+| `public/music/` | M3U playlist files | Protected by .htaccess auth |
+
+### Cron Endpoint Security
+
+The `/cron/process` endpoint allows external services to process download jobs.
+If you use this endpoint, protect it with a secret key:
+
+1. Add to your `.env` file:
+   ```
+   CRON_SECRET=your-random-secret-here
+   ```
+
+2. Configure your cron service to include the key:
+   ```
+   https://yourdomain.com/cron/process?key=your-random-secret-here&count=5
+   ```
+
+Without `CRON_SECRET` set, the endpoint is open (but still protected by any basic auth you've configured).
+
+### Nginx Security Config
+
+```nginx
+# Block access to sensitive paths
+location ~ /\.(ht|git|env) {
+    deny all;
+}
+
+location ~ ^/(data|config|vendor)/ {
+    deny all;
+}
+
+# Cron endpoint - optionally restrict by IP
+location = /cron/process {
+    # Option 1: Restrict to specific IPs (cron service IPs)
+    # allow 1.2.3.4;
+    # deny all;
+    
+    # Option 2: Rely on CRON_SECRET in .env
+    fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+    fastcgi_param SCRIPT_FILENAME $realpath_root/public/index.php;
+    include fastcgi_params;
+}
+```
+
+### Caddy Security Config
+
+```caddyfile
+yourdomain.com {
+    # ... other config ...
+    
+    # Block sensitive paths
+    @blocked {
+        path /.env /.git/* /data/* /config/* /vendor/* /composer.*
+    }
+    respond @blocked 403
+    
+    # Optional: Restrict cron endpoint by IP
+    # @cron_allowed {
+    #     path /cron/process
+    #     remote_ip 1.2.3.4
+    # }
+    # handle @cron_allowed {
+    #     php_fastcgi unix//var/run/php/php8.2-fpm.sock
+    # }
+}
+```
 
 ---
 

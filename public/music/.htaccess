@@ -1,0 +1,21 @@
+# Protect music directory - require authentication if main .htaccess has it enabled
+# This ensures M3U playlist files aren't publicly accessible
+
+# Inherit auth settings from parent directory
+# When basic auth is enabled in public/.htaccess, it applies here too
+
+# Block directory listing
+Options -Indexes
+
+# Only allow specific file types
+<FilesMatch "\.(m3u|m3u8)$">
+    # M3U files should only be accessible to authenticated users
+    # Auth is inherited from parent .htaccess when enabled
+    Satisfy all
+</FilesMatch>
+
+# Block any other files that shouldn't be here
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
