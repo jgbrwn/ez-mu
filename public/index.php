@@ -29,6 +29,12 @@ $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 $app->addErrorMiddleware(true, true, true);
 
+// Background job processor - processes queued downloads on page requests
+// Essential for shared hosting where cron/workers aren't available
+$app->add(new \App\Middleware\BackgroundProcessorMiddleware(
+    $container->get(\App\Services\DownloadService::class)
+));
+
 // Register routes
 (require __DIR__ . '/../config/routes.php')($app);
 

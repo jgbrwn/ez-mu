@@ -89,4 +89,68 @@ class DownloadController
         ]));
         return $response->withHeader('Content-Type', 'application/json');
     }
+
+    /**
+     * Cron endpoint for external services (e.g., cron-job.org)
+     * 
+     * GET /cron/process?key=YOUR_SECRET&count=5
+     * 
+     * - key: Optional secret key (set CRON_SECRET in .env)
+     * - count: Number of jobs to process (default 5, max 20)
+     */
+    public function cronProcess(Request $request, Response $response): Response
+    {
+        $params = $request->getQueryParams();
+        
+        // Check secret key if configured
+        $configuredKey = $_ENV['CRON_SECRET'] ?? '';
+        $providedKey = $params['key'] ?? '';
+        
+        if ($configuredKey && $providedKey !== $configuredKey) {
+            $response->getBody()->write(json_encode([
+                'error' => 'Invalid or missing key',
+            ]));
+            return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+        }
+        
+        // How many jobs to process
+        $count = min(20, max(1, (int)($params['count'] ?? 5)));
+        
+        $processed = 0;
+        $results = [];
+        
+        for ($i = 0; $i < $count; $i++) {
+            $job = $this->downloadService->getNextQueuedJob();
+            if (!$job) {
+                break;
+            }
+            
+            try {
+                $success = $this->downloadService->processDownload($job['id']);
+                $results[] = [
+                    'job_id' => $job['id'],
+                    'title' => $job['title'] ?? 'Unknown',
+                    'status' => $success ? 'completed' : 'failed',
+                ];
+                $processed++;
+            } catch (\Exception $e) {
+                $results[] = [
+                    'job_id' => $job['id'],
+                    'title' => $job['title'] ?? 'Unknown',
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+        
+        // Get queue stats
+        $stats = $this->queueService->getStats();
+        
+        $response->getBody()->write(json_encode([
+            'processed' => $processed,
+            'results' => $results,
+            'queue' => $stats,
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
 }
