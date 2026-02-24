@@ -258,7 +258,15 @@ function toggleSelectAll() {
     const checkboxes = document.querySelectorAll('.track-checkbox');
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
     checkboxes.forEach(cb => cb.checked = !allChecked);
+    updateSelectAllButton();
     updateDownloadButton();
+}
+
+function updateSelectAllButton() {
+    const checkboxes = document.querySelectorAll('.track-checkbox');
+    const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    selectAllBtn.textContent = allChecked ? 'Deselect All' : 'Select All';
 }
 
 function updateDownloadButton() {
@@ -292,6 +300,7 @@ function updateDownloadButton() {
 document.addEventListener('change', function(e) {
     if (e.target.classList.contains('track-checkbox')) {
         updateDownloadButton();
+        updateSelectAllButton();
     }
 });
 
