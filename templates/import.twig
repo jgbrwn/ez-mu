@@ -43,7 +43,15 @@
         <div class="spinner"></div>
     </div>
     <div id="playlist-result" style="margin-top: 12px;"></div>
+    <div id="batch-result"></div>
 </div>
+
+<script>
+// Ensure HTMX processes dynamically loaded forms
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    htmx.process(evt.detail.target);
+});
+</script>
 
 <div class="settings-section">
     <div class="settings-section-title">Bulk Import from Text</div>
