@@ -10,9 +10,10 @@
 {% endfor %}
 {% endif %}
 
-{# Out-of-band update for stats header #}
+{# Out-of-band updates for stats #}
 {% if stats is defined %}
 <div id="queue-stats" hx-swap-oob="true">
     {{ stats.queued }} queued • {{ stats.processing }} processing • {{ stats.completed }} completed • {{ stats.failed }} failed
 </div>
+<span id="queue-badge" hx-swap-oob="true">({{ stats.queued + stats.processing }})</span>
 {% endif %}
