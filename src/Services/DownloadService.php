@@ -69,11 +69,18 @@ class DownloadService
         if (!$job) {
             throw new Exception("Job not found: {$jobId}");
         }
-
-        $this->db->execute(
-            "UPDATE jobs SET status = 'processing', started_at = datetime('now') WHERE id = ?",
-            [$jobId]
-        );
+        
+        // Ensure job is in processing state (should already be set by getNextQueuedJob,
+        // but this handles direct calls and ensures idempotency)
+        if ($job['status'] === 'queued') {
+            $this->db->execute(
+                "UPDATE jobs SET status = 'processing', started_at = datetime('now') WHERE id = ? AND status = 'queued'",
+                [$jobId]
+            );
+        } elseif ($job['status'] !== 'processing') {
+            // Job already completed/failed - don't reprocess
+            return $job['status'] === 'completed';
+        }
 
         try {
             $source = $job['source'] ?? 'youtube';
@@ -461,10 +468,57 @@ class DownloadService
         return (int)($result['count'] ?? 0);
     }
 
+    /**
+     * Atomically claim the next queued job.
+     * Uses UPDATE...RETURNING to prevent race conditions between
+     * middleware, JS polling, and cron endpoints.
+     */
     public function getNextQueuedJob(): ?array
     {
-        return $this->db->queryOne(
-            "SELECT * FROM jobs WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1"
-        );
+        // SQLite supports UPDATE...RETURNING since 3.35 (2021)
+        // This atomically claims the job and returns it
+        $pdo = $this->db->getPdo();
+        
+        // Use a transaction with immediate locking
+        $pdo->exec('BEGIN IMMEDIATE');
+        
+        try {
+            // Find the next queued job
+            $stmt = $pdo->prepare(
+                "SELECT id FROM jobs WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1"
+            );
+            $stmt->execute();
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$row) {
+                $pdo->exec('ROLLBACK');
+                return null;
+            }
+            
+            // Atomically claim it by setting status to 'processing'
+            $stmt = $pdo->prepare(
+                "UPDATE jobs SET status = 'processing', started_at = datetime('now') 
+                 WHERE id = ? AND status = 'queued'"
+            );
+            $stmt->execute([$row['id']]);
+            
+            // Check if we actually claimed it (another process might have beaten us)
+            if ($stmt->rowCount() === 0) {
+                $pdo->exec('ROLLBACK');
+                return null;
+            }
+            
+            // Fetch the full job data
+            $stmt = $pdo->prepare("SELECT * FROM jobs WHERE id = ?");
+            $stmt->execute([$row['id']]);
+            $job = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            $pdo->exec('COMMIT');
+            
+            return $job ?: null;
+        } catch (\Exception $e) {
+            $pdo->exec('ROLLBACK');
+            throw $e;
+        }
     }
 }

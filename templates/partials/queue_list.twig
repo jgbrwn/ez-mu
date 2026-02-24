@@ -1,3 +1,4 @@
+{# Main queue list content #}
 {% if jobs is empty %}
 <div class="empty-state">
     <div class="empty-state-icon">📥</div>
@@ -7,4 +8,11 @@
 {% for job in jobs %}
 {% include 'partials/queue_item.twig' with {'job': job} %}
 {% endfor %}
+{% endif %}
+
+{# Out-of-band update for stats header #}
+{% if stats is defined %}
+<div id="queue-stats" hx-swap-oob="true">
+    {{ stats.queued }} queued • {{ stats.processing }} processing • {{ stats.completed }} completed • {{ stats.failed }} failed
+</div>
 {% endif %}

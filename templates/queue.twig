@@ -13,7 +13,7 @@
 </div>
 
 <div class="queue-header">
-    <h2 style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+    <h2 id="queue-stats" style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
         {{ stats.queued }} queued • {{ stats.processing }} processing • {{ stats.completed }} completed • {{ stats.failed }} failed
     </h2>
     <form hx-post="/queue/clear" hx-target="#queue-list" hx-swap="innerHTML">
