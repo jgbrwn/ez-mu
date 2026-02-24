@@ -96,8 +96,8 @@ class QueueService
     }
 
     /**
-     * Check if a track is already queued or completed (by video_id)
-     * For completed jobs, also verifies the file actually exists
+     * Check if a track is already queued, processing, or in library (by video_id)
+     * For completed items, verifies the file actually exists on disk
      */
     public function isAlreadyQueued(string $videoId): bool
     {
@@ -110,7 +110,22 @@ class QueueService
             return true;
         }
         
-        // For completed jobs, verify the file actually exists
+        // Check library directly (most reliable source of truth)
+        $libraryTrack = $this->db->queryOne(
+            "SELECT id, file_path FROM library WHERE video_id = ?",
+            [$videoId]
+        );
+        
+        if ($libraryTrack) {
+            // If file exists, it's truly in the library
+            if (!empty($libraryTrack['file_path']) && file_exists($libraryTrack['file_path'])) {
+                return true;
+            }
+            // File is missing - remove the orphaned library entry
+            $this->db->execute('DELETE FROM library WHERE id = ?', [$libraryTrack['id']]);
+        }
+        
+        // Check for completed jobs (fallback - library should be authoritative)
         $completedJob = $this->db->queryOne(
             "SELECT id, file_path FROM jobs WHERE video_id = ? AND status = 'completed' ORDER BY completed_at DESC LIMIT 1",
             [$videoId]

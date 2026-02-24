@@ -403,11 +403,12 @@ class DownloadService
         $id = $this->generateId();
         
         $this->db->execute(
-            'INSERT INTO library (id, job_id, title, artist, album, file_path, file_size, duration, codec, bitrate, thumbnail, source)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO library (id, job_id, video_id, title, artist, album, file_path, file_size, duration, codec, bitrate, thumbnail, source)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $id,
                 $job['id'],
+                $job['video_id'] ?? null,  // Store video_id for duplicate tracking
                 $result['title'] ?? $job['title'],
                 $result['artist'] ?? $job['artist'],
                 $result['album'] ?? 'Singles',

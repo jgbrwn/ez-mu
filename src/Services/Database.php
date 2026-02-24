@@ -61,6 +61,7 @@ class Database
             CREATE TABLE IF NOT EXISTS library (
                 id TEXT PRIMARY KEY,
                 job_id TEXT,
+                video_id TEXT,
                 title TEXT NOT NULL,
                 artist TEXT,
                 album TEXT DEFAULT 'Singles',
@@ -75,6 +76,18 @@ class Database
                 FOREIGN KEY (job_id) REFERENCES jobs(id)
             )
         ");
+        
+        // Migration: add video_id column if missing (for existing databases)
+        try {
+            $this->pdo->exec("ALTER TABLE library ADD COLUMN video_id TEXT");
+            // Backfill video_id from related jobs
+            $this->pdo->exec(
+                "UPDATE library SET video_id = (SELECT video_id FROM jobs WHERE jobs.id = library.job_id) 
+                 WHERE video_id IS NULL AND job_id IS NOT NULL"
+            );
+        } catch (\PDOException $e) {
+            // Column already exists, ignore
+        }
 
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS settings (

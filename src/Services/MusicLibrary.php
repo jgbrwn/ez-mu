@@ -96,7 +96,7 @@ class MusicLibrary
     }
 
     /**
-     * Delete a track
+     * Delete a track - removes file, library entry, and related job record
      */
     public function deleteTrack(string $id): bool
     {
@@ -124,7 +124,31 @@ class MusicLibrary
             }
         }
 
-        return $this->db->execute('DELETE FROM library WHERE id = ?', [$id]) > 0;
+        // Store job info for cleanup after library delete
+        $jobId = $track['job_id'] ?? null;
+        $videoId = $track['video_id'] ?? null;
+        
+        // Delete library entry first (has FK to jobs)
+        $deleted = $this->db->execute('DELETE FROM library WHERE id = ?', [$id]) > 0;
+        
+        if ($deleted) {
+            // Now delete the related job record to prevent orphaned "completed" jobs
+            // This ensures the track can be re-downloaded later if desired
+            if ($jobId) {
+                $this->db->execute('DELETE FROM jobs WHERE id = ?', [$jobId]);
+            }
+            
+            // Also delete any jobs that reference this track by video_id
+            // (handles cases where job_id wasn't properly linked, or multiple download attempts)
+            if ($videoId) {
+                $this->db->execute(
+                    "DELETE FROM jobs WHERE video_id = ? AND status IN ('completed', 'failed')",
+                    [$videoId]
+                );
+            }
+        }
+
+        return $deleted;
     }
 
     /**
