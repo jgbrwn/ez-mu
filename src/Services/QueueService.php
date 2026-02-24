@@ -78,6 +78,8 @@ class QueueService
      */
     public function deleteJob(string $id): bool
     {
+        // First clear job reference from library (if any) to avoid FK constraint
+        $this->db->execute('UPDATE library SET job_id = NULL WHERE job_id = ?', [$id]);
         return $this->db->execute('DELETE FROM jobs WHERE id = ?', [$id]) > 0;
     }
 
@@ -86,20 +88,24 @@ class QueueService
      */
     public function clearJobs(?string $status = null): int
     {
-        // Only delete jobs that aren't referenced by library entries
-        // (library.job_id has a FK constraint to jobs.id)
+        // First, clear job references from library entries
+        // This allows us to delete the jobs without FK constraint violations
+        // The library entries remain intact - we just remove the job_id reference
         if ($status === 'completed') {
-            return $this->db->execute(
-                "DELETE FROM jobs WHERE status = 'completed' 
-                 AND id NOT IN (SELECT job_id FROM library WHERE job_id IS NOT NULL)"
+            $this->db->execute(
+                "UPDATE library SET job_id = NULL WHERE job_id IN 
+                 (SELECT id FROM jobs WHERE status = 'completed')"
             );
+            return $this->db->execute("DELETE FROM jobs WHERE status = 'completed'");
         } elseif ($status === 'failed') {
             return $this->db->execute("DELETE FROM jobs WHERE status = 'failed'");
         } else {
-            return $this->db->execute(
-                "DELETE FROM jobs WHERE status IN ('completed', 'failed')
-                 AND id NOT IN (SELECT job_id FROM library WHERE job_id IS NOT NULL)"
+            // Clear both completed and failed
+            $this->db->execute(
+                "UPDATE library SET job_id = NULL WHERE job_id IN 
+                 (SELECT id FROM jobs WHERE status IN ('completed', 'failed'))"
             );
+            return $this->db->execute("DELETE FROM jobs WHERE status IN ('completed', 'failed')");
         }
     }
 
