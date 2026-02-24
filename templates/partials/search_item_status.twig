@@ -1,11 +1,21 @@
 {# Status indicator for search result items #}
+{# Use track data if available (from library), fall back to job data #}
+{% set title = track.title|default(job.title)|default('Track') %}
+{% set artist = track.artist|default(job.artist)|default('') %}
+{% set thumbnail = job.thumbnail|default('') %}
+
 {% if status == 'completed' %}
 {# In library - show checkmark #}
 <div class="result-item in-library">
+    {% if thumbnail %}
+    <img class="result-thumb" src="{{ thumbnail }}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% else %}
     <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% endif %}
     <div class="result-info">
-        <div class="result-title">{{ job.title|default('Track') }}</div>
-        <div class="result-meta">{{ job.artist|default('') }}</div>
+        <div class="result-title">{{ title }}</div>
+        <div class="result-meta">{{ artist }}</div>
         <div class="result-badges">
             <span style="color: var(--accent); font-size: 12px;">✓ In Library</span>
         </div>
@@ -20,10 +30,15 @@
      hx-get="/api/job/{{ video_id }}/status-partial"
      hx-trigger="every 2s"
      hx-swap="outerHTML">
+    {% if thumbnail %}
+    <img class="result-thumb" src="{{ thumbnail }}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% else %}
     <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% endif %}
     <div class="result-info">
-        <div class="result-title">{{ job.title|default('Track') }}</div>
-        <div class="result-meta">{{ job.artist|default('') }}</div>
+        <div class="result-title">{{ title }}</div>
+        <div class="result-meta">{{ artist }}</div>
         <div class="result-badges">
             <span style="color: var(--warning); font-size: 12px;">{{ status == 'processing' ? '⚡ Downloading...' : '⏳ Queued' }}</span>
         </div>
@@ -35,10 +50,15 @@
 {% elseif status == 'failed' %}
 {# Failed - show error with retry #}
 <div class="result-item failed">
+    {% if thumbnail %}
+    <img class="result-thumb" src="{{ thumbnail }}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% else %}
     <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% endif %}
     <div class="result-info">
-        <div class="result-title">{{ job.title|default('Track') }}</div>
-        <div class="result-meta">{{ job.artist|default('') }}</div>
+        <div class="result-title">{{ title }}</div>
+        <div class="result-meta">{{ artist }}</div>
         <div class="result-badges">
             <span style="color: var(--error); font-size: 12px;">✗ Failed</span>
         </div>
@@ -53,10 +73,15 @@
 {% else %}
 {# Unknown state #}
 <div class="result-item">
+    {% if thumbnail %}
+    <img class="result-thumb" src="{{ thumbnail }}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% else %}
     <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% endif %}
     <div class="result-info">
-        <div class="result-title">Track</div>
-        <div class="result-meta"></div>
+        <div class="result-title">{{ title }}</div>
+        <div class="result-meta">{{ artist }}</div>
     </div>
     <div class="status-icon" title="Unknown">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>

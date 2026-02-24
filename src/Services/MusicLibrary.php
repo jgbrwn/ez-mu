@@ -65,6 +65,14 @@ class MusicLibrary
     }
 
     /**
+     * Get track by video_id
+     */
+    public function getTrackByVideoId(string $videoId): ?array
+    {
+        return $this->db->queryOne('SELECT * FROM library WHERE video_id = ?', [$videoId]);
+    }
+
+    /**
      * Search tracks with pagination and sorting
      */
     public function searchTracks(string $query, string $sort = 'recent', int $limit = 25, int $offset = 0): array

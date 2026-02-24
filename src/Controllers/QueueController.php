@@ -143,20 +143,23 @@ class QueueController
     {
         $videoId = $args['videoId'];
         
+        // Always get job info for title/artist/thumbnail
+        $job = $this->queueService->findByVideoId($videoId);
+        
         // Check if now in library
         if ($this->musicLibrary->trackExistsWithFile($videoId)) {
+            // Get track info from library for display
+            $track = $this->musicLibrary->getTrackByVideoId($videoId);
             return $this->twig->render($response, 'partials/search_item_status.twig', [
                 'status' => 'completed',
                 'video_id' => $videoId,
+                'job' => $job,
+                'track' => $track,
             ]);
         }
         
-        // Check job status
-        $job = $this->queueService->findByVideoId($videoId);
-        
         if (!$job) {
-            // No job found, not in library - show download button? 
-            // This shouldn't happen normally
+            // No job found, not in library - shouldn't happen normally
             return $this->twig->render($response, 'partials/search_item_status.twig', [
                 'status' => 'unknown',
                 'video_id' => $videoId,
