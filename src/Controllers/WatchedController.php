@@ -84,6 +84,9 @@ class WatchedController
      */
     public function view(Request $request, Response $response, array $args): Response
     {
+        // Sync track statuses with completed jobs
+        $this->watchedService->syncTrackStatuses();
+
         $id = $args['id'];
         $playlist = $this->watchedService->getPlaylist($id);
 

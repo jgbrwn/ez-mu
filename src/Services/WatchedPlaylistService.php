@@ -562,7 +562,25 @@ class WatchedPlaylistService
         ");
         $stmt->execute();
 
+        // Regenerate M3U for playlists with newly downloaded tracks
+        if ($downloaded > 0) {
+            $this->regenerateAllM3u();
+        }
+
         return $downloaded;
+    }
+
+    /**
+     * Regenerate M3U files for all playlists that have M3U enabled
+     */
+    public function regenerateAllM3u(): void
+    {
+        $stmt = $this->db->query("SELECT id FROM watched_playlists WHERE make_m3u = 1");
+        $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($playlists as $playlist) {
+            $this->generateM3u($playlist['id']);
+        }
     }
 
     /**
@@ -581,7 +599,9 @@ class WatchedPlaylistService
     {
         $safeName = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $playlistName);
         $safeName = trim($safeName) ?: 'playlist';
-        return "music/Playlists/{$safeName}.m3u";
+        // Use absolute path based on project root
+        $baseDir = dirname(__DIR__, 2);  // Go up from src/Services to project root
+        return "{$baseDir}/music/Playlists/{$safeName}.m3u";
     }
 
     /**
@@ -621,10 +641,21 @@ class WatchedPlaylistService
         $m3u = "#EXTM3U\n";
         $m3u .= "#PLAYLIST:{$playlist['name']}\n";
 
+        $baseDir = dirname(__DIR__, 2);  // Project root
+        $musicDir = realpath("{$baseDir}/music");
+
         foreach ($tracks as $track) {
-            if (!empty($track['file_path']) && file_exists($track['file_path'])) {
-                // Relative path from music/Playlists/
-                $relativePath = '../' . substr($track['file_path'], strlen('music/'));
+            $filePath = $track['file_path'];
+            if (!empty($filePath) && file_exists($filePath)) {
+                // Convert to relative path from music/Playlists/
+                $realPath = realpath($filePath);
+                if ($realPath && $musicDir && strpos($realPath, $musicDir) === 0) {
+                    // Path is under music/ - make relative from Playlists folder
+                    $relativePath = '../' . substr($realPath, strlen($musicDir) + 1);
+                } else {
+                    // Fallback to absolute path
+                    $relativePath = $realPath ?: $filePath;
+                }
                 $m3u .= "#EXTINF:-1,{$track['artist']} - {$track['title']}\n";
                 $m3u .= "{$relativePath}\n";
             }
