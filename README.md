@@ -23,6 +23,7 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 
 - **🎵 Monochrome/Tidal** - Lossless FLAC downloads from Tidal CDN (no account needed)
 - **📝 Playlist Import** - Import from Spotify, Apple Music, YouTube Music, Tidal
+- **👁️ Watched Playlists** - Monitor playlists for new tracks, auto-download, generate M3U files
 - **🎧 Library & Playback** - Stream music directly in the browser (HTML5 audio)
 - **🎯 MusicBrainz** - Automatic metadata enrichment (artist, album, year)
 - **⬇️ Export** - Download multiple tracks as a zip file
@@ -124,6 +125,21 @@ Settings are stored in SQLite and can be managed via the Settings page:
 2. Click "Download Selected"
 3. For multiple tracks, you'll get a zip file
 
+### Watched Playlists
+
+Monitor playlists and automatically download new tracks:
+
+1. Go to the Watched tab
+2. Enter a playlist URL (Spotify, YouTube, Tidal, or Amazon Music)
+3. Choose sync mode:
+   - **Append**: Keep all downloaded tracks even if removed upstream
+   - **Mirror**: M3U reflects current playlist state
+4. Enable M3U generation for playlist files
+5. Set refresh interval (how often to check for new tracks)
+6. Click "Add & Start Watching"
+
+Tracks are queued in small batches to avoid timeouts on shared hosting.
+
 ## YouTube Authentication
 
 YouTube may require authentication for some videos. Options:
@@ -161,6 +177,11 @@ ez-mu/
 | GET | /stream/{id} | Stream audio file |
 | POST | /library/download | Download selected tracks |
 | GET | /settings | Settings page |
+| GET | /watched | Watched playlists page |
+| POST | /watched/add | Add watched playlist |
+| GET | /watched/{id} | View playlist tracks |
+| POST | /watched/{id}/refresh | Check for new tracks |
+| POST | /watched/{id}/queue | Queue pending tracks |
 
 ## Credits
 
