@@ -863,6 +863,11 @@ h1 {
     margin-bottom: 12px;
 }
 
+/* Hide OOB swap elements inside queue list (they flash briefly before HTMX moves them) */
+#queue-list [hx-swap-oob] {
+    display: none !important;
+}
+
 .clear-btn {
     padding: 8px 16px;
     font-size: 13px;
