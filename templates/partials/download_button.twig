@@ -1,31 +1,67 @@
-<div class="result-item {% if status == 'queued' %}downloading{% endif %} auto-fade" style="opacity: 0.7;">
-    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
-        {% if status == 'queued' %}
-        <div class="job-status downloading"></div>
-        <span style="color: var(--accent);">{{ message }}</span>
-        {% elseif status == 'already_queued' %}
-        <div class="job-status queued" style="background: #eab308;"></div>
-        <span style="color: #eab308;">{{ message }}</span>
-        {% elseif status == 'already_downloaded' %}
-        <div class="job-status completed"></div>
-        <span style="color: var(--accent);">{{ message }} ✓</span>
-        {% elseif status == 'error' %}
-        <div class="job-status failed"></div>
-        <span style="color: var(--error);">{{ message }}</span>
-        {% endif %}
+{% if status == 'queued' %}
+{# Just added to queue - show polling indicator #}
+<div class="result-item in-queue"
+     hx-get="/api/job/{{ video_id }}/status-partial"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ title|default('Track') }}</div>
+        <div class="result-meta">{{ artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--warning); font-size: 12px;">⏳ Added to queue</span>
+        </div>
+    </div>
+    <div class="status-icon queued" title="Queued">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
     </div>
 </div>
-<script>
-(function() {
-    const el = document.currentScript.previousElementSibling;
-    setTimeout(() => {
-        el.style.transition = 'opacity 0.5s, max-height 0.5s, margin 0.5s, padding 0.5s';
-        el.style.opacity = '0';
-        el.style.maxHeight = '0';
-        el.style.margin = '0';
-        el.style.padding = '0';
-        el.style.overflow = 'hidden';
-        setTimeout(() => el.remove(), 500);
-    }, 4000);
-})();
-</script>
+{% elseif status == 'already_queued' %}
+{# Already in queue - show polling indicator #}
+<div class="result-item in-queue"
+     hx-get="/api/job/{{ video_id }}/status-partial"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ title|default('Track') }}</div>
+        <div class="result-meta">{{ artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--warning); font-size: 12px;">⏳ Already in queue</span>
+        </div>
+    </div>
+    <div class="status-icon queued" title="In Queue">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+</div>
+{% elseif status == 'already_downloaded' %}
+{# Already in library - show checkmark #}
+<div class="result-item in-library">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ title|default('Track') }}</div>
+        <div class="result-meta">{{ artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--accent); font-size: 12px;">✓ Already in library</span>
+        </div>
+    </div>
+    <div class="status-icon completed" title="In Library">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    </div>
+</div>
+{% elseif status == 'error' %}
+{# Error - show error indicator #}
+<div class="result-item failed">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ title|default('Track') }}</div>
+        <div class="result-meta">{{ artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--error); font-size: 12px;">✗ {{ message }}</span>
+        </div>
+    </div>
+    <div class="status-icon failed" title="Failed">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+    </div>
+</div>
+{% endif %}

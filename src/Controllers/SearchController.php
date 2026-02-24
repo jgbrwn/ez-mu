@@ -6,16 +6,26 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\SearchService;
+use App\Services\MusicLibrary;
+use App\Services\QueueService;
 
 class SearchController
 {
     private Twig $twig;
     private SearchService $searchService;
+    private MusicLibrary $musicLibrary;
+    private QueueService $queueService;
 
-    public function __construct(Twig $twig, SearchService $searchService)
-    {
+    public function __construct(
+        Twig $twig,
+        SearchService $searchService,
+        MusicLibrary $musicLibrary,
+        QueueService $queueService
+    ) {
         $this->twig = $twig;
         $this->searchService = $searchService;
+        $this->musicLibrary = $musicLibrary;
+        $this->queueService = $queueService;
     }
 
     public function search(Request $request, Response $response): Response
@@ -56,6 +66,16 @@ class SearchController
                 } else {
                     $message = 'No results found';
                 }
+            }
+
+            // Get library and queue status for results
+            $libraryVideoIds = $this->musicLibrary->getLibraryVideoIds();
+            $queuedVideoIds = $this->queueService->getActiveVideoIds();
+            
+            // Mark results with their status
+            foreach ($results as &$result) {
+                $result['in_library'] = in_array($result['video_id'], $libraryVideoIds);
+                $result['in_queue'] = in_array($result['video_id'], $queuedVideoIds);
             }
 
             return $this->twig->render($response, 'partials/results.twig', [

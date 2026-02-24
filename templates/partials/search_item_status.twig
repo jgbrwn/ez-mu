@@ -1,0 +1,65 @@
+{# Status indicator for search result items #}
+{% if status == 'completed' %}
+{# In library - show checkmark #}
+<div class="result-item in-library">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ job.title|default('Track') }}</div>
+        <div class="result-meta">{{ job.artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--accent); font-size: 12px;">✓ In Library</span>
+        </div>
+    </div>
+    <div class="status-icon completed" title="In Library">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    </div>
+</div>
+{% elseif status == 'queued' or status == 'processing' %}
+{# Still in queue - keep polling #}
+<div class="result-item in-queue"
+     hx-get="/api/job/{{ video_id }}/status-partial"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ job.title|default('Track') }}</div>
+        <div class="result-meta">{{ job.artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--warning); font-size: 12px;">{{ status == 'processing' ? '⚡ Downloading...' : '⏳ Queued' }}</span>
+        </div>
+    </div>
+    <div class="status-icon {{ status }}" title="{{ status == 'processing' ? 'Downloading' : 'Queued' }}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+</div>
+{% elseif status == 'failed' %}
+{# Failed - show error with retry #}
+<div class="result-item failed">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">{{ job.title|default('Track') }}</div>
+        <div class="result-meta">{{ job.artist|default('') }}</div>
+        <div class="result-badges">
+            <span style="color: var(--error); font-size: 12px;">✗ Failed</span>
+        </div>
+    </div>
+    <button class="status-icon failed" title="Retry Download"
+            hx-post="/queue/{{ job.id }}/retry"
+            hx-target="closest .result-item"
+            hx-swap="outerHTML">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+</div>
+{% else %}
+{# Unknown state #}
+<div class="result-item">
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    <div class="result-info">
+        <div class="result-title">Track</div>
+        <div class="result-meta"></div>
+    </div>
+    <div class="status-icon" title="Unknown">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+    </div>
+</div>
+{% endif %}

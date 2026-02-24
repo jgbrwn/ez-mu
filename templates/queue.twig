@@ -60,6 +60,11 @@ function processQueue() {
         .catch(() => setTimeout(processQueue, 5000));
 }
 
+// Play track from queue - redirect to library with autoplay
+function playTrackFromJob(videoId) {
+    window.location.href = '/library?play=' + encodeURIComponent(videoId);
+}
+
 processQueue();
 </script>
 {% endblock %}

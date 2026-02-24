@@ -18,6 +18,8 @@ use App\Services\MetadataService;
 use App\Controllers\SettingsController;
 use App\Controllers\WatchedController;
 use App\Controllers\ImportController;
+use App\Controllers\SearchController;
+use App\Controllers\QueueController;
 use App\Services\WatchedPlaylistService;
 use App\Twig\AppExtension;
 
@@ -150,6 +152,24 @@ return [
             $c->get(DownloadService::class),
             $c->get(QueueService::class),
             $c->get(WatchedPlaylistService::class)
+        );
+    },
+
+    SearchController::class => function (ContainerInterface $c) {
+        return new SearchController(
+            $c->get(Twig::class),
+            $c->get(SearchService::class),
+            $c->get(MusicLibrary::class),
+            $c->get(QueueService::class)
+        );
+    },
+
+    QueueController::class => function (ContainerInterface $c) {
+        return new QueueController(
+            $c->get(Twig::class),
+            $c->get(QueueService::class),
+            $c->get(DownloadService::class),
+            $c->get(MusicLibrary::class)
         );
     },
 ];

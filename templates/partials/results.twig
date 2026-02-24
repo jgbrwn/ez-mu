@@ -16,6 +16,61 @@
 </div>
 {% endif %}
 {% for result in results %}
+{% if result.in_library %}
+{# Already in library - show checkmark #}
+<div class="result-item in-library">
+    {% if result.thumbnail %}
+    <img class="result-thumb" src="{{ result.thumbnail }}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% else %}
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% endif %}
+    
+    <div class="result-info">
+        <div class="result-title">{{ result.title }}</div>
+        <div class="result-meta">{{ result.artist }}</div>
+        <div class="result-badges">
+            <span class="source-badge {{ result.source }}">{{ result.source|upper }}</span>
+            {% if result.quality %}
+            <span class="quality-badge {% if result.quality == 'HI_RES_LOSSLESS' %}hires{% elseif result.quality == 'LOSSLESS' %}flac{% endif %}">{{ result.quality == 'HI_RES_LOSSLESS' ? 'Hi-Res' : (result.quality == 'LOSSLESS' ? 'Lossless' : result.quality) }}</span>
+            {% endif %}
+            <span class="result-duration">{{ result.duration_string }}</span>
+        </div>
+    </div>
+    <div class="status-icon completed" title="In Library">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    </div>
+</div>
+{% elseif result.in_queue %}
+{# Currently in queue - show processing indicator #}
+<div class="result-item in-queue"
+     hx-get="/api/job/{{ result.video_id }}/status-partial"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    {% if result.thumbnail %}
+    <img class="result-thumb" src="{{ result.thumbnail }}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="result-thumb" style="display:none;background:var(--bg-tertiary);align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% else %}
+    <div class="result-thumb" style="background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:24px;">🎵</div>
+    {% endif %}
+    
+    <div class="result-info">
+        <div class="result-title">{{ result.title }}</div>
+        <div class="result-meta">{{ result.artist }}</div>
+        <div class="result-badges">
+            <span class="source-badge {{ result.source }}">{{ result.source|upper }}</span>
+            {% if result.quality %}
+            <span class="quality-badge {% if result.quality == 'HI_RES_LOSSLESS' %}hires{% elseif result.quality == 'LOSSLESS' %}flac{% endif %}">{{ result.quality == 'HI_RES_LOSSLESS' ? 'Hi-Res' : (result.quality == 'LOSSLESS' ? 'Lossless' : result.quality) }}</span>
+            {% endif %}
+            <span class="result-duration">{{ result.duration_string }}</span>
+        </div>
+    </div>
+    <div class="status-icon queued" title="In Queue">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    </div>
+</div>
+{% else %}
+{# Not in library or queue - show download button #}
 <form class="result-item" 
       hx-post="/download" 
       hx-swap="outerHTML" 
@@ -52,5 +107,6 @@
         <span class="btn-spinner"></span>
     </button>
 </form>
+{% endif %}
 {% endfor %}
 {% endif %}

@@ -32,6 +32,9 @@ class DownloadController
         $data = $request->getParsedBody();
         $videoId = $data['video_id'] ?? '';
         
+        $title = $data['title'] ?? 'Unknown';
+        $artist = $data['artist'] ?? 'Unknown';
+        
         // Check if already queued/completed
         if ($this->queueService->isAlreadyQueued($videoId)) {
             $existing = $this->queueService->findByVideoId($videoId);
@@ -40,6 +43,9 @@ class DownloadController
             return $this->twig->render($response, 'partials/download_button.twig', [
                 'status' => $status === 'completed' ? 'already_downloaded' : 'already_queued',
                 'message' => $status === 'completed' ? 'Already in library' : 'Already in queue',
+                'video_id' => $videoId,
+                'title' => $title,
+                'artist' => $artist,
             ]);
         }
         
@@ -60,11 +66,17 @@ class DownloadController
                 'job_id' => $jobId,
                 'status' => 'queued',
                 'message' => 'Added to queue',
+                'video_id' => $videoId,
+                'title' => $title,
+                'artist' => $artist,
             ]);
         } catch (\Exception $e) {
             return $this->twig->render($response, 'partials/download_button.twig', [
                 'status' => 'error',
                 'message' => 'Failed: ' . $e->getMessage(),
+                'video_id' => $videoId,
+                'title' => $title,
+                'artist' => $artist,
             ]);
         }
     }

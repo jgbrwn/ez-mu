@@ -71,6 +71,7 @@ return function (App $app) {
 
     // API endpoints for background processing
     $app->get('/api/queue/status', [QueueController::class, 'status']);
+    $app->get('/api/job/{videoId}/status-partial', [QueueController::class, 'jobStatusPartial']);
     $app->get('/api/config', [SettingsController::class, 'config']);
     
     // Cron endpoint - can be called by external cron services (e.g., cron-job.org)

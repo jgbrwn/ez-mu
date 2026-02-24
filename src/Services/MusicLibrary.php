@@ -318,6 +318,15 @@ class MusicLibrary
     }
 
     /**
+     * Get all video IDs that are in the library
+     */
+    public function getLibraryVideoIds(): array
+    {
+        $rows = $this->db->query('SELECT video_id FROM library WHERE file_path IS NOT NULL');
+        return array_column($rows, 'video_id');
+    }
+
+    /**
      * Get tracks grouped by artist
      */
     public function getArtists(): array

@@ -173,6 +173,17 @@ class QueueService
     }
 
     /**
+     * Get all video IDs that are currently queued or processing
+     */
+    public function getActiveVideoIds(): array
+    {
+        $rows = $this->db->query(
+            "SELECT video_id FROM jobs WHERE status IN ('queued', 'processing')"
+        );
+        return array_column($rows, 'video_id');
+    }
+
+    /**
      * Clear completed jobs older than X minutes
      * Only deletes jobs that don't have library entries (to avoid FK constraint issues)
      */

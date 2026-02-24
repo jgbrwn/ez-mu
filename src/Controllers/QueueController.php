@@ -7,21 +7,25 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\QueueService;
 use App\Services\DownloadService;
+use App\Services\MusicLibrary;
 
 class QueueController
 {
     private Twig $twig;
     private QueueService $queueService;
     private DownloadService $downloadService;
+    private MusicLibrary $musicLibrary;
 
     public function __construct(
         Twig $twig,
         QueueService $queueService,
-        DownloadService $downloadService
+        DownloadService $downloadService,
+        MusicLibrary $musicLibrary
     ) {
         $this->twig = $twig;
         $this->queueService = $queueService;
         $this->downloadService = $downloadService;
+        $this->musicLibrary = $musicLibrary;
     }
 
     /**
@@ -130,5 +134,39 @@ class QueueController
 
         // Return updated queue list
         return $this->queuePartial($request, $response);
+    }
+
+    /**
+     * Get job status partial for search results polling
+     */
+    public function jobStatusPartial(Request $request, Response $response, array $args): Response
+    {
+        $videoId = $args['videoId'];
+        
+        // Check if now in library
+        if ($this->musicLibrary->trackExistsWithFile($videoId)) {
+            return $this->twig->render($response, 'partials/search_item_status.twig', [
+                'status' => 'completed',
+                'video_id' => $videoId,
+            ]);
+        }
+        
+        // Check job status
+        $job = $this->queueService->findByVideoId($videoId);
+        
+        if (!$job) {
+            // No job found, not in library - show download button? 
+            // This shouldn't happen normally
+            return $this->twig->render($response, 'partials/search_item_status.twig', [
+                'status' => 'unknown',
+                'video_id' => $videoId,
+            ]);
+        }
+        
+        return $this->twig->render($response, 'partials/search_item_status.twig', [
+            'status' => $job['status'],
+            'video_id' => $videoId,
+            'job' => $job,
+        ]);
     }
 }

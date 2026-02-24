@@ -576,6 +576,70 @@ h1 {
     display: none;
 }
 
+/* Status icons for search results */
+.status-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    border: none;
+    cursor: default;
+}
+
+.status-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.status-icon.completed {
+    background: var(--accent);
+    color: #000;
+}
+
+.status-icon.queued {
+    background: var(--warning);
+    color: #000;
+    animation: pulse 1.5s infinite;
+}
+
+.status-icon.processing {
+    background: var(--warning);
+    color: #000;
+    animation: pulse 0.8s infinite;
+}
+
+.status-icon.failed {
+    background: var(--error);
+    color: #fff;
+    cursor: pointer;
+}
+
+.status-icon.failed:hover {
+    transform: scale(1.1);
+}
+
+.status-icon.warning {
+    background: #f97316;
+    color: #000;
+}
+
+.result-item.in-library {
+    opacity: 0.7;
+}
+
+.result-item.in-queue {
+    opacity: 0.85;
+}
+
+.result-item.failed {
+    opacity: 0.85;
+}
+
 .result-title {
     font-size: 15px;
     font-weight: 600;
@@ -710,6 +774,97 @@ h1 {
 .job-status.completed { background: var(--accent); }
 .job-status.completed_with_errors { background: var(--warning); }
 .job-status.failed { background: var(--error); }
+
+/* New job status icons */
+.job-status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.job-status-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.job-status-icon.queued {
+    background: var(--warning);
+    color: #000;
+}
+
+.job-status-icon.processing {
+    background: var(--warning);
+    color: #000;
+    animation: pulse 0.8s infinite;
+}
+
+.job-status-icon.completed {
+    background: var(--accent);
+    color: #000;
+}
+
+.job-status-icon.completed_with_errors {
+    background: #f97316;
+    color: #000;
+}
+
+.job-status-icon.failed {
+    background: var(--error);
+    color: #fff;
+}
+
+/* Job action buttons */
+.job-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.job-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.job-action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.job-action-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.job-action-btn.play:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+}
+
+.job-action-btn.retry:hover {
+    background: var(--warning);
+    border-color: var(--warning);
+    color: #000;
+}
+
+.job-action-btn.delete:hover {
+    background: var(--error);
+    border-color: var(--error);
+    color: #fff;
+}
 
 .job-warning-badge {
     font-size: 10px;
