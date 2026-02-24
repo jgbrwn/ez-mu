@@ -20,6 +20,7 @@ class MusicLibrary
 
     /**
      * Get all tracks in library with pagination and sorting
+     * Adds 'file_missing' flag if file doesn't exist on disk
      * 
      * @param string $sort Sort option: 'recent', 'artist', 'title'
      * @param int $limit Items per page
@@ -33,10 +34,17 @@ class MusicLibrary
             default => 'created_at DESC',
         };
         
-        return $this->db->query(
+        $tracks = $this->db->query(
             "SELECT * FROM library ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             [$limit, $offset]
         );
+        
+        // Check file existence for each track
+        foreach ($tracks as &$track) {
+            $track['file_missing'] = !$this->fileExists($track);
+        }
+        
+        return $tracks;
     }
 
     /**
@@ -172,6 +180,117 @@ class MusicLibrary
             'total_size' => (int)($result['total_size'] ?? 0),
             'total_duration' => (int)($result['total_duration'] ?? 0),
         ];
+    }
+    
+    /**
+     * Check if a track's file exists on disk
+     */
+    public function fileExists(array $track): bool
+    {
+        return !empty($track['file_path']) && file_exists($track['file_path']);
+    }
+    
+    /**
+     * Validate library integrity - find orphaned records and missing files
+     * 
+     * @return array{missing_files: array, orphaned_jobs: array, fixed: int}
+     */
+    public function validateIntegrity(): array
+    {
+        $missingFiles = [];
+        $orphanedJobs = [];
+        $fixed = 0;
+        
+        // Find library entries with missing files
+        $tracks = $this->db->query('SELECT id, title, artist, file_path FROM library');
+        foreach ($tracks as $track) {
+            if (!$this->fileExists($track)) {
+                $missingFiles[] = [
+                    'id' => $track['id'],
+                    'title' => $track['title'],
+                    'artist' => $track['artist'],
+                    'file_path' => $track['file_path'],
+                ];
+            }
+        }
+        
+        // Find completed jobs with missing files
+        $jobs = $this->db->query(
+            "SELECT id, title, artist, file_path FROM jobs WHERE status = 'completed'"
+        );
+        foreach ($jobs as $job) {
+            if (!empty($job['file_path']) && !file_exists($job['file_path'])) {
+                $orphanedJobs[] = [
+                    'id' => $job['id'],
+                    'title' => $job['title'],
+                    'artist' => $job['artist'],
+                    'file_path' => $job['file_path'],
+                ];
+            }
+        }
+        
+        return [
+            'missing_files' => $missingFiles,
+            'orphaned_jobs' => $orphanedJobs,
+            'library_issues' => count($missingFiles),
+            'job_issues' => count($orphanedJobs),
+        ];
+    }
+    
+    /**
+     * Fix integrity issues - remove orphaned library entries and mark jobs as failed
+     * 
+     * @return array{library_removed: int, jobs_marked_failed: int}
+     */
+    public function fixIntegrityIssues(): array
+    {
+        $libraryRemoved = 0;
+        $jobsMarkedFailed = 0;
+        
+        // Remove library entries with missing files
+        $tracks = $this->db->query('SELECT id, file_path FROM library');
+        foreach ($tracks as $track) {
+            if (!empty($track['file_path']) && !file_exists($track['file_path'])) {
+                $this->db->execute('DELETE FROM library WHERE id = ?', [$track['id']]);
+                $libraryRemoved++;
+            }
+        }
+        
+        // Mark completed jobs with missing files as failed
+        $jobs = $this->db->query(
+            "SELECT id, file_path FROM jobs WHERE status = 'completed'"
+        );
+        foreach ($jobs as $job) {
+            if (!empty($job['file_path']) && !file_exists($job['file_path'])) {
+                $this->db->execute(
+                    "UPDATE jobs SET status = 'failed', error = 'File missing from disk' WHERE id = ?",
+                    [$job['id']]
+                );
+                $jobsMarkedFailed++;
+            }
+        }
+        
+        return [
+            'library_removed' => $libraryRemoved,
+            'jobs_marked_failed' => $jobsMarkedFailed,
+        ];
+    }
+    
+    /**
+     * Check if a specific track exists in library AND file exists on disk
+     */
+    public function trackExistsWithFile(string $videoId): bool
+    {
+        $track = $this->db->queryOne(
+            'SELECT file_path FROM library WHERE video_id = ?',
+            [$videoId]
+        );
+        
+        if (!$track) {
+            return false;
+        }
+        
+        return !empty($track['file_path']) && file_exists($track['file_path']);
     }
 
     /**

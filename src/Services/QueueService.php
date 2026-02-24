@@ -97,14 +97,39 @@ class QueueService
 
     /**
      * Check if a track is already queued or completed (by video_id)
+     * For completed jobs, also verifies the file actually exists
      */
     public function isAlreadyQueued(string $videoId): bool
     {
-        $result = $this->db->queryOne(
-            "SELECT id FROM jobs WHERE video_id = ? AND status IN ('queued', 'processing', 'completed')",
+        // Check for active (queued/processing) jobs first
+        $activeJob = $this->db->queryOne(
+            "SELECT id FROM jobs WHERE video_id = ? AND status IN ('queued', 'processing')",
             [$videoId]
         );
-        return $result !== null;
+        if ($activeJob) {
+            return true;
+        }
+        
+        // For completed jobs, verify the file actually exists
+        $completedJob = $this->db->queryOne(
+            "SELECT id, file_path FROM jobs WHERE video_id = ? AND status = 'completed' ORDER BY completed_at DESC LIMIT 1",
+            [$videoId]
+        );
+        
+        if ($completedJob) {
+            // If file exists, it's truly complete
+            if (!empty($completedJob['file_path']) && file_exists($completedJob['file_path'])) {
+                return true;
+            }
+            // File is missing - mark as failed so it can be re-downloaded
+            $this->db->execute(
+                "UPDATE jobs SET status = 'failed', error = 'File missing from disk' WHERE id = ?",
+                [$completedJob['id']]
+            );
+            return false;
+        }
+        
+        return false;
     }
 
     /**

@@ -15,6 +15,7 @@ use App\Services\RateLimiter;
 use App\Services\MonochromeService;
 use App\Services\PlaylistService;
 use App\Services\MetadataService;
+use App\Controllers\SettingsController;
 
 return [
     // Configuration
@@ -103,5 +104,14 @@ return [
 
     MetadataService::class => function (ContainerInterface $c) {
         return new MetadataService($c->get(Database::class));
+    },
+
+    SettingsController::class => function (ContainerInterface $c) {
+        return new SettingsController(
+            $c->get(\Slim\Views\Twig::class),
+            $c->get(SettingsService::class),
+            $c->get(MusicLibrary::class),
+            $c
+        );
     },
 ];

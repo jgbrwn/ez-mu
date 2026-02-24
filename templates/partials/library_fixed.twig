@@ -1,0 +1,20 @@
+<div class="validation-result" style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+    <div style="display: flex; align-items: center; gap: 12px; color: var(--accent);">
+        <span style="font-size: 24px;">✓</span>
+        <div>
+            <div style="font-weight: 600;">Issues Fixed</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">
+                {% if result.library_removed > 0 %}Removed {{ result.library_removed }} orphaned library entry(s). {% endif %}
+                {% if result.jobs_marked_failed > 0 %}Marked {{ result.jobs_marked_failed }} job(s) as failed for re-download.{% endif %}
+                {% if result.library_removed == 0 and result.jobs_marked_failed == 0 %}No issues found.{% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <button hx-post="/settings/validate-library"
+            hx-target=".validation-result"
+            hx-swap="outerHTML"
+            style="margin-top: 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+        Validate Again
+    </button>
+</div>

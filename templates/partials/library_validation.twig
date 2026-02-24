@@ -1,0 +1,54 @@
+<div class="validation-result" style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+    {% if issues.library_issues == 0 and issues.job_issues == 0 %}
+        <div style="display: flex; align-items: center; gap: 12px; color: var(--accent);">
+            <span style="font-size: 24px;">✓</span>
+            <div>
+                <div style="font-weight: 600;">Library is healthy</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">All files exist and database is in sync.</div>
+            </div>
+        </div>
+    {% else %}
+        <div style="display: flex; align-items: center; gap: 12px; color: var(--warning, #ffc107); margin-bottom: 16px;">
+            <span style="font-size: 24px;">⚠️</span>
+            <div>
+                <div style="font-weight: 600;">Issues Found</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">{{ issues.library_issues + issues.job_issues }} file(s) missing from disk</div>
+            </div>
+        </div>
+        
+        {% if issues.missing_files|length > 0 %}
+        <details style="margin-bottom: 12px;">
+            <summary style="cursor: pointer; font-size: 13px; color: var(--error);">{{ issues.library_issues }} library track(s) with missing files</summary>
+            <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; font-size: 12px;">
+                {% for item in issues.missing_files %}
+                <div style="padding: 4px 0; border-bottom: 1px solid var(--border);">
+                    {{ item.artist }} - {{ item.title }}
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+        
+        {% if issues.orphaned_jobs|length > 0 %}
+        <details style="margin-bottom: 12px;">
+            <summary style="cursor: pointer; font-size: 13px; color: var(--warning, #ffc107);">{{ issues.job_issues }} completed job(s) with missing files</summary>
+            <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; font-size: 12px;">
+                {% for item in issues.orphaned_jobs %}
+                <div style="padding: 4px 0; border-bottom: 1px solid var(--border);">
+                    {{ item.artist }} - {{ item.title }}
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+        
+        <button hx-post="/settings/fix-library"
+                hx-target=".validation-result"
+                hx-swap="outerHTML"
+                class="btn btn-warning"
+                style="background: var(--warning, #ffc107); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            Fix Issues
+        </button>
+        <span style="font-size: 12px; color: var(--text-secondary); margin-left: 12px;">Removes orphaned library entries, marks jobs as failed for re-download</span>
+    {% endif %}
+</div>

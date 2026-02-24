@@ -50,6 +50,8 @@ return function (App $app) {
     // Settings
     $app->get('/settings', [SettingsController::class, 'index']);
     $app->post('/settings', [SettingsController::class, 'save']);
+    $app->post('/settings/validate-library', [SettingsController::class, 'validateLibrary']);
+    $app->post('/settings/fix-library', [SettingsController::class, 'fixLibrary']);
     
     // API endpoints for background processing
     $app->get('/api/queue/status', [QueueController::class, 'status']);

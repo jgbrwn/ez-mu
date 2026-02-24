@@ -7,18 +7,21 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
 use App\Services\SettingsService;
 use App\Services\Environment;
+use App\Services\MusicLibrary;
 use Psr\Container\ContainerInterface;
 
 class SettingsController
 {
     private Twig $twig;
     private SettingsService $settings;
+    private MusicLibrary $library;
     private array $appSettings;
 
-    public function __construct(Twig $twig, SettingsService $settings, ContainerInterface $container)
+    public function __construct(Twig $twig, SettingsService $settings, MusicLibrary $library, ContainerInterface $container)
     {
         $this->twig = $twig;
         $this->settings = $settings;
+        $this->library = $library;
         $this->appSettings = $container->get('settings');
     }
 
@@ -78,5 +81,29 @@ class SettingsController
 
         $response->getBody()->write(json_encode($config));
         return $response->withHeader('Content-Type', 'application/json');
+    }
+    
+    /**
+     * Validate library integrity - check for orphaned records and missing files
+     */
+    public function validateLibrary(Request $request, Response $response): Response
+    {
+        $issues = $this->library->validateIntegrity();
+        
+        return $this->twig->render($response, 'partials/library_validation.twig', [
+            'issues' => $issues,
+        ]);
+    }
+    
+    /**
+     * Fix library integrity issues
+     */
+    public function fixLibrary(Request $request, Response $response): Response
+    {
+        $result = $this->library->fixIntegrityIssues();
+        
+        return $this->twig->render($response, 'partials/library_fixed.twig', [
+            'result' => $result,
+        ]);
     }
 }

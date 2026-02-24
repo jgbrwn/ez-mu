@@ -143,6 +143,24 @@
 </form>
 
 <div class="settings-section" style="margin-top: 24px;">
+    <div class="settings-section-title">Library Maintenance</div>
+    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 16px;">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+            Check for orphaned database entries and missing files. This can happen if files are manually deleted or moved.
+        </p>
+        <div id="validation-container">
+            <button hx-post="/settings/validate-library"
+                    hx-target="#validation-container"
+                    hx-swap="innerHTML"
+                    class="btn"
+                    style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                Validate Library
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="settings-section" style="margin-top: 24px;">
     <div class="settings-section-title">System Information</div>
     <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
         <div style="margin-bottom: 12px;">
