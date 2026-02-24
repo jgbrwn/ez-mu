@@ -26,11 +26,13 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 ## Features
 
 - **🎵 Monochrome/Tidal** - Lossless FLAC downloads from Tidal CDN (no account needed)
-- **📝 Playlist Import** - Import from Spotify, Apple Music, YouTube Music, Tidal
+- **📝 Playlist Import** - Import from Spotify, Apple Music, YouTube Music, Tidal, Amazon Music
 - **👁️ Watched Playlists** - Monitor playlists for new tracks, auto-download, generate M3U files
-- **🎧 Library & Playback** - Stream music directly in the browser (HTML5 audio)
+- **🎧 Library & Playback** - Stream music directly in the browser (HTML5 audio player)
+- **📁 Library Management** - Search, sort (by date/artist/title), bulk select, delete tracks
 - **🎯 MusicBrainz** - Automatic metadata enrichment (artist, album, year)
-- **⬇️ Export** - Download multiple tracks as a zip file
+- **⬇️ Export** - Download single tracks or multiple as a zip file
+- **🔄 Background Processing** - Jobs process automatically on page requests (shared hosting compatible)
 - **🌙 Dark/Light Theme** - Toggle with saved preference
 - **📱 Mobile-friendly** - Responsive design
 
@@ -39,6 +41,7 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 - **YouTube Search** - Via yt-dlp (requires cookies)
 - **SoundCloud Search** - Via yt-dlp
 - **Audio Fingerprinting** - AcoustID for precise metadata matching
+- **Cron Endpoint** - `/cron/process` for external job scheduling
 
 ## Tech Stack
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="20" fill="#1DB954"/>
+  <g fill="white" transform="translate(22, 18) scale(0.56)">
+    <!-- Double music note shape -->
+    <ellipse cx="20" cy="90" rx="16" ry="12"/>
+    <ellipse cx="80" cy="80" rx="16" ry="12"/>
+    <rect x="32" y="15" width="8" height="75"/>
+    <rect x="92" y="5" width="8" height="75"/>
+    <path d="M32 15 L100 5 L100 25 L32 35 Z"/>
+  </g>
+</svg>
