@@ -697,6 +697,16 @@ class WatchedPlaylistService
     }
 
     /**
+     * Get web-accessible M3U filename for a playlist
+     */
+    public function getM3uFilename(string $playlistName): string
+    {
+        $safeName = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $playlistName);
+        $safeName = trim($safeName) ?: 'playlist';
+        return "{$safeName}.m3u";
+    }
+
+    /**
      * Generate M3U file for a playlist
      */
     public function generateM3u(string $playlistId): array

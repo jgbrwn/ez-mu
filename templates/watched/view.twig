@@ -54,15 +54,22 @@
                 🔁 Retry {{ playlist.failed_tracks }} Failed
             </button>
             {% endif %}
-            {% if playlist.make_m3u %}
+            {% if playlist.make_m3u and m3u_exists %}
             <button 
                 class="btn"
-                hx-post="/watched/{{ playlist.id }}/m3u"
-                hx-target="#m3u-result"
-                hx-indicator="#action-spinner"
+                onclick="copyM3uLink()"
+                title="Copy M3U link to clipboard"
             >
-                🎵 Generate M3U
+                📋 Copy M3U Link
             </button>
+            <a 
+                href="/music/Playlists/{{ m3u_filename|url_encode }}"
+                download="{{ m3u_filename }}"
+                class="btn btn-icon-only"
+                title="Download M3U file"
+            >
+                ⬇
+            </a>
             {% endif %}
             <span id="action-spinner" class="htmx-indicator">⏳</span>
         </div>
@@ -163,9 +170,33 @@
 #auto-queue-status.active {
     display: block;
 }
+.btn-icon-only {
+    width: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>
 
 <script>
+// Copy M3U link to clipboard
+function copyM3uLink() {
+    const m3uUrl = window.location.origin + '/music/Playlists/{{ m3u_filename|url_encode }}';
+    navigator.clipboard.writeText(m3uUrl).then(() => {
+        // Show toast notification
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.textContent = 'M3U link copied!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback: show the URL in a prompt
+        prompt('Copy this M3U link:', m3uUrl);
+    });
+}
+
 (function() {
     const playlistId = '{{ playlist.id }}';
     let autoQueueActive = false;

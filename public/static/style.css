@@ -553,6 +553,29 @@ h1 {
     transform: scale(0.95);
 }
 
+.download-btn .btn-spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.download-btn .btn-icon {
+    display: block;
+}
+
+/* When form is in htmx-request state, show spinner and hide icon */
+.result-item.htmx-request .download-btn .btn-spinner {
+    display: block;
+}
+
+.result-item.htmx-request .download-btn .btn-icon {
+    display: none;
+}
+
 .result-title {
     font-size: 15px;
     font-weight: 600;

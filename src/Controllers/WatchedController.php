@@ -102,6 +102,11 @@ class WatchedController
         $page = max(1, (int)($queryParams['page'] ?? 1));
         
         $trackData = $this->watchedService->getPlaylistTracks($id, $statusFilter, $page, 25);
+        
+        // Get M3U filename for the link/download buttons
+        $m3uFilename = $this->watchedService->getM3uFilename($playlist['name']);
+        $m3uPath = $this->watchedService->getM3uPath($playlist['name']);
+        $m3uExists = file_exists($m3uPath);
 
         return $this->view->render($response, 'watched/view.twig', [
             'playlist' => $playlist,
@@ -113,7 +118,9 @@ class WatchedController
                 'per_page' => $trackData['per_page']
             ],
             'status_filter' => $statusFilter,
-            'active_page' => 'watched'
+            'active_page' => 'watched',
+            'm3u_filename' => $m3uFilename,
+            'm3u_exists' => $m3uExists
         ]);
     }
 

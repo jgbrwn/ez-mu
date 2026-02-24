@@ -47,7 +47,10 @@
             <span class="result-duration">{{ result.duration_string }}</span>
         </div>
     </div>
-    <button type="submit" class="download-btn">⬇</button>
+    <button type="submit" class="download-btn">
+        <span class="btn-icon">⬇</span>
+        <span class="btn-spinner"></span>
+    </button>
 </form>
 {% endfor %}
 {% endif %}
