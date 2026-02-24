@@ -160,35 +160,118 @@ See [yt-dlp wiki](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookie
 
 ```
 ez-mu/
-├── public/           # Web root
-│   ├── index.php     # Front controller
-│   └── static/       # CSS, images
+├── public/                    # Web root (point domain here)
+│   ├── index.php              # Front controller
+│   ├── static/                # CSS, images
+│   │   └── style.css
+│   └── music/                 # M3U playlist files
+│       └── Playlists/
 ├── src/
-│   ├── Controllers/  # Route handlers
-│   └── Services/     # Business logic
-├── templates/        # Twig templates
-├── config/           # App configuration
-├── data/             # SQLite database
-└── music/            # Downloaded files
+│   ├── Controllers/           # Route handlers
+│   │   ├── DownloadController.php
+│   │   ├── HomeController.php
+│   │   ├── ImportController.php
+│   │   ├── LibraryController.php
+│   │   ├── QueueController.php
+│   │   ├── SearchController.php
+│   │   ├── SettingsController.php
+│   │   ├── StreamController.php
+│   │   └── WatchedController.php
+│   ├── Middleware/
+│   │   └── BackgroundProcessorMiddleware.php
+│   └── Services/              # Business logic
+│       ├── Audio/             # FLAC handling
+│       ├── Database.php
+│       ├── DownloadService.php
+│       ├── Environment.php
+│       ├── MetadataService.php
+│       ├── MonochromeService.php
+│       ├── MusicLibrary.php
+│       ├── PlaylistService.php
+│       ├── QueueService.php
+│       ├── SearchService.php
+│       ├── SettingsService.php
+│       └── WatchedPlaylistService.php
+├── templates/                 # Twig templates
+│   ├── *.twig                 # Main page templates
+│   ├── partials/              # HTMX partial responses
+│   └── watched/               # Watched playlist templates
+├── config/
+│   ├── container.php          # DI container definitions
+│   └── routes.php             # Route definitions
+├── migrations/                # Database migrations
+├── data/                      # SQLite database (created on first run)
+└── music/                     # Downloaded files (outside web root)
+    ├── Singles/               # Audio files organized by artist
+    └── Playlists/             # Symlinked to public/music/Playlists
 ```
 
 ## API Endpoints
 
+### Pages
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | / | Home page |
-| POST | /search | Search music (HTMX) |
-| POST | /download | Queue a download |
-| GET | /queue | Queue page |
-| GET | /library | Library page |
-| GET | /stream/{id} | Stream audio file |
-| POST | /library/download | Download selected tracks |
-| GET | /settings | Settings page |
-| GET | /watched | Watched playlists page |
-| POST | /watched/add | Add watched playlist |
+| GET | / | Home/Search page |
+| GET | /library | Music library |
+| GET | /queue | Download queue |
+| GET | /import | Playlist import |
+| GET | /watched | Watched playlists |
 | GET | /watched/{id} | View playlist tracks |
+| GET | /settings | Settings page |
+
+### Search & Download
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /search | Search music (returns HTMX partial) |
+| POST | /download | Queue a track for download |
+| GET | /stream/{id} | Stream audio file |
+| POST | /library/download | Download selected tracks as zip |
+| DELETE | /library/{id} | Delete track from library |
+
+### Queue Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /queue/{id}/retry | Retry failed download |
+| DELETE | /queue/{id} | Remove job from queue |
+| POST | /queue/clear | Clear completed jobs |
+| POST | /download/process | Process next queued job |
+| GET | /cron/process | Cron endpoint (process multiple jobs) |
+
+### Import
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /import/fetch | Fetch playlist tracks from URL |
+| POST | /import/tracks | Import tracks to queue |
+| POST | /import/batch/{id} | Import batch of tracks |
+
+### Watched Playlists
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /watched/add | Add watched playlist |
+| DELETE | /watched/{id} | Delete watched playlist |
+| POST | /watched/{id}/toggle | Enable/disable playlist |
 | POST | /watched/{id}/refresh | Check for new tracks |
-| POST | /watched/{id}/queue | Queue pending tracks |
+| POST | /watched/refresh-all | Refresh all playlists |
+| POST | /watched/{id}/queue | Queue all pending tracks |
+| POST | /watched/{id}/queue-batch | Queue batch of tracks |
+| POST | /watched/{id}/retry | Retry failed tracks |
+| POST | /watched/{id}/m3u | Regenerate M3U file |
+| GET | /watched/{id}/status | Get queue status (JSON) |
+
+### API / HTMX Partials
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /partials/results | Search results partial |
+| GET | /partials/queue | Queue list partial |
+| GET | /partials/library | Library list partial |
+| GET | /api/queue/status | Queue stats (JSON) |
+| GET | /api/config | App configuration (JSON) |
 
 ## Credits
 
