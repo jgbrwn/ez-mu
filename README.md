@@ -10,12 +10,16 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 
 <table>
   <tr>
-    <td><strong>Search</strong><br><img src="docs/screenshots/search.png" alt="Search results" width="400"></td>
-    <td><strong>Library</strong><br><img src="docs/screenshots/library.png" alt="Music library" width="400"></td>
+    <td><strong>Search</strong><br><img src="docs/screenshots/search.png?v=20250224" alt="Search results" width="400"></td>
+    <td><strong>Library</strong><br><img src="docs/screenshots/library.png?v=20250224" alt="Music library" width="400"></td>
   </tr>
   <tr>
-    <td><strong>Settings</strong><br><img src="docs/screenshots/settings.png" alt="Settings page" width="400"></td>
-    <td><strong>System Info</strong><br><img src="docs/screenshots/system-info.png" alt="System information" width="400"></td>
+    <td><strong>Queue</strong><br><img src="docs/screenshots/queue.png?v=20250224" alt="Download queue" width="400"></td>
+    <td><strong>Import</strong><br><img src="docs/screenshots/import.png?v=20250224" alt="Playlist import" width="400"></td>
+  </tr>
+  <tr>
+    <td><strong>Watched</strong><br><img src="docs/screenshots/watched.png?v=20250224" alt="Watched playlists" width="400"></td>
+    <td><strong>Settings</strong><br><img src="docs/screenshots/settings.png?v=20250224" alt="Settings page" width="400"></td>
   </tr>
 </table>
 
