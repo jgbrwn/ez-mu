@@ -57,7 +57,10 @@ return [
     },
 
     MonochromeService::class => function (ContainerInterface $c) {
-        return new MonochromeService($c->get(RateLimiter::class));
+        return new MonochromeService(
+            $c->get(RateLimiter::class),
+            $c->get(SettingsService::class)
+        );
     },
 
     SearchService::class => function (ContainerInterface $c) {

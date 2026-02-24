@@ -8,21 +8,143 @@ use Exception;
  * Monochrome/Tidal API Service
  * 
  * Provides lossless FLAC downloads directly from Tidal CDN.
+ * Automatically discovers and falls back to working API mirrors.
  */
 class MonochromeService
 {
-    private const DEFAULT_API_URL = 'https://triton.squid.wtf';
-    private string $apiUrl;
+    /**
+     * Prioritized list of Monochrome API mirrors
+     * See: https://github.com/monochrome-music/monochrome/blob/main/INSTANCES.md
+     */
+    private const API_MIRRORS = [
+        'https://triton.squid.wtf',           // squid.wtf community
+        'https://wolf.qqdl.site',             // Lucida/QQDL community
+        'https://maus.qqdl.site',             // Lucida/QQDL community
+        'https://tidal.kinoplus.online',      // Kinoplus community
+        'https://api.monochrome.tf',          // Official (currently down)
+        'https://monochrome-api.samidy.com',  // Official secondary
+        'https://arran.monochrome.tf',        // Official tertiary
+    ];
+    
     private const COVER_BASE = 'https://resources.tidal.com/images';
     private const TIMEOUT = 15;
+    private const HEALTH_CHECK_TIMEOUT = 5;
+    private const MIRROR_CACHE_TTL = 300; // 5 minutes
 
     private RateLimiter $rateLimiter;
+    private ?SettingsService $settings;
+    private ?string $workingMirror = null;
 
-    public function __construct(RateLimiter $rateLimiter)
+    public function __construct(RateLimiter $rateLimiter, ?SettingsService $settings = null)
     {
         $this->rateLimiter = $rateLimiter;
-        // Allow overriding API URL via environment variable
-        $this->apiUrl = $_ENV['MONOCHROME_API_URL'] ?? self::DEFAULT_API_URL;
+        $this->settings = $settings;
+    }
+    
+    /**
+     * Get a working API mirror URL, with caching and fallback
+     */
+    public function getApiUrl(): string
+    {
+        // Check for env override first (always respected)
+        $envUrl = $_ENV['MONOCHROME_API_URL'] ?? null;
+        if ($envUrl) {
+            return $envUrl;
+        }
+        
+        // Return cached working mirror if still in memory
+        if ($this->workingMirror !== null) {
+            return $this->workingMirror;
+        }
+        
+        // Try to load from settings cache
+        if ($this->settings) {
+            $cached = $this->settings->get('monochrome_mirror_cache');
+            if ($cached) {
+                $cache = json_decode($cached, true);
+                if ($cache && isset($cache['url'], $cache['expires']) && $cache['expires'] > time()) {
+                    $this->workingMirror = $cache['url'];
+                    return $this->workingMirror;
+                }
+            }
+        }
+        
+        // Discover a working mirror
+        $mirror = $this->discoverWorkingMirror();
+        $this->workingMirror = $mirror;
+        
+        // Cache the result
+        if ($this->settings && $mirror) {
+            $this->settings->set('monochrome_mirror_cache', json_encode([
+                'url' => $mirror,
+                'expires' => time() + self::MIRROR_CACHE_TTL,
+            ]));
+        }
+        
+        return $mirror ?? self::API_MIRRORS[0];
+    }
+    
+    /**
+     * Discover a working API mirror by testing each one
+     */
+    private function discoverWorkingMirror(): ?string
+    {
+        foreach (self::API_MIRRORS as $mirror) {
+            if ($this->testMirrorHealth($mirror)) {
+                error_log("Monochrome: Using mirror {$mirror}");
+                return $mirror;
+            }
+        }
+        
+        error_log("Monochrome: All mirrors failed health check");
+        return null;
+    }
+    
+    /**
+     * Test if a mirror is healthy by making a lightweight search request
+     */
+    private function testMirrorHealth(string $mirrorUrl): bool
+    {
+        $ch = curl_init($mirrorUrl . '/search/?s=test');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => self::HEALTH_CHECK_TIMEOUT,
+            CURLOPT_CONNECTTIMEOUT => self::HEALTH_CHECK_TIMEOUT,
+            CURLOPT_USERAGENT => 'EZ-MU/1.0',
+            CURLOPT_NOBODY => false,
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200 || !$response) {
+            return false;
+        }
+        
+        // Verify response has expected structure
+        $data = json_decode($response, true);
+        return isset($data['data']['items']);
+    }
+    
+    /**
+     * Invalidate the cached mirror (call when a request fails)
+     */
+    public function invalidateMirrorCache(): void
+    {
+        $this->workingMirror = null;
+        if ($this->settings) {
+            $this->settings->set('monochrome_mirror_cache', '');
+        }
+    }
+    
+    /**
+     * Get list of all known mirrors (for diagnostics/settings)
+     */
+    public static function getMirrorList(): array
+    {
+        return self::API_MIRRORS;
     }
 
     /**
@@ -39,8 +161,27 @@ class MonochromeService
         // Rate limit: 10 requests per minute for Monochrome
         $this->rateLimiter->wait('monochrome', 10, 60);
 
+        // Try with current/cached mirror first
+        $result = $this->doSearch($query, $limit);
+        
+        // If failed, invalidate cache and try discovering a new mirror
+        if ($result['error'] !== null && !isset($_ENV['MONOCHROME_API_URL'])) {
+            error_log("Monochrome search failed, trying mirror discovery...");
+            $this->invalidateMirrorCache();
+            $result = $this->doSearch($query, $limit);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Perform the actual search request
+     */
+    private function doSearch(string $query, int $limit): array
+    {
         try {
-            $url = $this->apiUrl . '/search/?' . http_build_query(['s' => $query]);
+            $apiUrl = $this->getApiUrl();
+            $url = $apiUrl . '/search/?' . http_build_query(['s' => $query]);
             $http = $this->httpGet($url);
             
             // cURL error
@@ -120,11 +261,23 @@ class MonochromeService
         $this->rateLimiter->wait('monochrome', 10, 60);
 
         try {
-            $url = $this->apiUrl . '/info/?' . http_build_query(['id' => $trackId]);
+            $apiUrl = $this->getApiUrl();
+            $url = $apiUrl . '/info/?' . http_build_query(['id' => $trackId]);
             $http = $this->httpGet($url);
             
             if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
-                return null;
+                // Try mirror discovery on failure
+                if (!isset($_ENV['MONOCHROME_API_URL'])) {
+                    $this->invalidateMirrorCache();
+                    $apiUrl = $this->getApiUrl();
+                    $url = $apiUrl . '/info/?' . http_build_query(['id' => $trackId]);
+                    $http = $this->httpGet($url);
+                    if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
             }
 
             $data = json_decode($http['body'], true);
@@ -148,9 +301,11 @@ class MonochromeService
             $qualities = [$quality, 'LOSSLESS', 'HIGH'];
         }
 
+        $apiUrl = $this->getApiUrl();
+        
         foreach ($qualities as $q) {
             try {
-                $url = $this->apiUrl . '/track/?' . http_build_query(['id' => $trackId, 'quality' => $q]);
+                $url = $apiUrl . '/track/?' . http_build_query(['id' => $trackId, 'quality' => $q]);
                 $http = $this->httpGet($url);
                 
                 if (!$http['body'] || $http['code'] < 200 || $http['code'] >= 300) {

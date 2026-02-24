@@ -104,7 +104,8 @@ class ImportController
             if (empty($line)) continue;
 
             // Search for the track (prioritize Monochrome)
-            $searchResults = $this->searchService->searchMonochrome($line, 3);
+            $monoResponse = $this->searchService->searchMonochrome($line, 3);
+            $searchResults = $monoResponse['results'] ?? [];
             
             if (empty($searchResults)) {
                 // Fallback to SoundCloud
