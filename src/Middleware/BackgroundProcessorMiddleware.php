@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Services\DownloadService;
+use App\Services\QueueService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -18,6 +19,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 class BackgroundProcessorMiddleware implements MiddlewareInterface
 {
     private DownloadService $downloadService;
+    private QueueService $queueService;
     
     // How many jobs to process per request
     private int $jobsPerRequest = 1;
@@ -30,9 +32,10 @@ class BackgroundProcessorMiddleware implements MiddlewareInterface
         '/partials/',         // HTMX partials - process only on full page loads
     ];
 
-    public function __construct(DownloadService $downloadService)
+    public function __construct(DownloadService $downloadService, QueueService $queueService)
     {
         $this->downloadService = $downloadService;
+        $this->queueService = $queueService;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -63,6 +66,13 @@ class BackgroundProcessorMiddleware implements MiddlewareInterface
         // Flush output to client first
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
+        }
+        
+        // Auto-clear completed jobs older than 30 minutes
+        try {
+            $this->queueService->clearOldCompleted(30);
+        } catch (\Exception $e) {
+            // Ignore cleanup errors
         }
         
         // Process jobs

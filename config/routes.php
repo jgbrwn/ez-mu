@@ -42,6 +42,7 @@ return function (App $app) {
     $app->get('/stream/{id}', [StreamController::class, 'stream']);
     $app->post('/library/download', [LibraryController::class, 'downloadSelected']);
     $app->delete('/library/{id}', [LibraryController::class, 'deleteTrack']);
+    $app->delete('/library', [LibraryController::class, 'deleteAll']);
     
     // Import
     $app->get('/import', [ImportController::class, 'index']);

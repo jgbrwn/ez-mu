@@ -57,6 +57,7 @@ class LibraryController
             'totalTracks' => $totalTracks,
             'perPage' => $perPage,
             'autoplayNext' => $this->settings->get('autoplay_next', '0') === '1',
+            'is_htmx' => false, // Initial page load, don't send OOB swap
         ]);
     }
 
@@ -81,6 +82,7 @@ class LibraryController
         }
         
         $totalPages = (int)ceil($totalTracks / $perPage);
+        $stats = $this->library->getStats();
 
         return $this->twig->render($response, 'partials/library_list.twig', [
             'tracks' => $tracks,
@@ -89,6 +91,7 @@ class LibraryController
             'page' => $page,
             'totalPages' => $totalPages,
             'totalTracks' => $totalTracks,
+            'stats' => $stats,
         ]);
     }
 
@@ -161,5 +164,19 @@ class LibraryController
 
         $response->getBody()->write('Track not found');
         return $response->withStatus(404);
+    }
+
+    /**
+     * Delete all tracks from library
+     */
+    public function deleteAll(Request $request, Response $response): Response
+    {
+        $count = $this->library->deleteAllTracks();
+        
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'deleted' => $count
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
     }
 }

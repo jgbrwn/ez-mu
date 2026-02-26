@@ -160,6 +160,49 @@ class MusicLibrary
     }
 
     /**
+     * Delete all tracks from library
+     * @return int Number of tracks deleted
+     */
+    public function deleteAllTracks(): int
+    {
+        $tracks = $this->db->query('SELECT id, file_path, job_id, video_id FROM library');
+        $musicDirReal = realpath($this->musicDir);
+        $count = 0;
+
+        foreach ($tracks as $track) {
+            // Delete file if it exists and is within our music directory
+            if (!empty($track['file_path']) && file_exists($track['file_path'])) {
+                $realPath = realpath($track['file_path']);
+                if ($realPath && $musicDirReal && str_starts_with($realPath, $musicDirReal)) {
+                    unlink($track['file_path']);
+                }
+            }
+            $count++;
+        }
+
+        // Clear library table
+        $this->db->execute('DELETE FROM library');
+        
+        // Clear related jobs
+        $this->db->execute("DELETE FROM jobs WHERE status IN ('completed', 'failed')");
+
+        // Clean up empty artist directories
+        $singlesDir = $this->musicDir . '/Singles';
+        if (is_dir($singlesDir)) {
+            $dirs = glob($singlesDir . '/*', GLOB_ONLYDIR);
+            foreach ($dirs as $dir) {
+                $dirReal = realpath($dir);
+                if ($dirReal && str_starts_with($dirReal, $musicDirReal) && 
+                    count(glob($dir . '/*')) === 0) {
+                    rmdir($dir);
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * Create a zip file of selected tracks
      */
     public function createZip(array $trackIds): string

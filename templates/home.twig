@@ -84,7 +84,7 @@
         document.getElementById('searchInput').focus();
     }
 
-    // Auto-fade downloaded/queued items using MutationObserver
+    // Auto-fade completed/already-downloaded items after 4 seconds
     const resultsContainer = document.getElementById('results');
     const fadeItem = (el) => {
         if (el.dataset.fading) return; // Already scheduled
@@ -96,16 +96,43 @@
             el.style.margin = '0';
             el.style.padding = '0';
             el.style.overflow = 'hidden';
-            setTimeout(() => el.remove(), 500);
+            setTimeout(() => {
+                el.remove();
+                updateResultsCount();
+            }, 500);
         }, 4000);
+    };
+    
+    const shouldFade = (el) => {
+        // Fade items that are in-library (completed downloads)
+        // But NOT items that are in-queue (still processing)
+        return el.classList.contains('in-library');
+    };
+    
+    const updateResultsCount = () => {
+        const results = document.querySelectorAll('#results .result-item');
+        const header = document.getElementById('results-header');
+        const count = document.getElementById('results-count');
+        if (results.length > 0) {
+            header.style.display = 'flex';
+            count.textContent = results.length + ' result' + (results.length > 1 ? 's' : '');
+        } else {
+            header.style.display = 'none';
+            // Show empty state when all results are faded
+            document.getElementById('results').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎵</div>
+                    <p>Search for music to get started</p>
+                </div>
+            `;
+        }
     };
     
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
                 if (node.nodeType === 1 && node.classList && node.classList.contains('result-item')) {
-                    if (node.textContent.includes('Added to queue') || 
-                        node.textContent.includes('Already in')) {
+                    if (shouldFade(node)) {
                         fadeItem(node);
                     }
                 }
@@ -114,5 +141,8 @@
     });
     
     observer.observe(resultsContainer, { childList: true, subtree: true });
+    
+    // Also check existing items on page load (for items already in library)
+    document.querySelectorAll('#results .result-item.in-library').forEach(fadeItem);
 </script>
 {% endblock %}

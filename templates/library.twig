@@ -36,10 +36,10 @@
 </div>
 
 <div class="queue-header">
-    <h2 class="library-stats" style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+    <h2 class="library-stats" id="libraryStatsHeader" style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
         {{ totalTracks }} tracks • {{ (stats.total_size / 1048576)|number_format(1) }} MB
     </h2>
-    <div style="display: flex; gap: 8px;">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button id="selectAllBtn" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" onclick="toggleSelectAll()">
             Select All
         </button>
@@ -51,6 +51,11 @@
                 ⬇ Download Selected
             </button>
         </form>
+        {% if totalTracks > 0 %}
+        <button type="button" class="clear-btn" style="color: var(--error); border-color: var(--error);" onclick="confirmDeleteAll()">
+            🗑 Delete All
+        </button>
+        {% endif %}
     </div>
 </div>
 
@@ -346,16 +351,49 @@ function closeDeleteModal() {
     deleteTargets = [];
     deleteTrackIds = [];
     isBulkDelete = false;
+    isDeleteAll = false;
+}
+
+function refreshLibraryList() {
+    // Get current filter/sort state
+    const query = document.getElementById('librarySearch')?.value || '';
+    const sort = document.getElementById('librarySort')?.value || 'recent';
+    
+    // Refresh the library list via HTMX - let server determine correct page
+    htmx.ajax('GET', `/partials/library?q=${encodeURIComponent(query)}&sort=${sort}&page=1`, {
+        target: '#library-list',
+        swap: 'innerHTML'
+    });
 }
 
 function executeDelete() {
-    if (deleteTrackIds.length === 0) return;
-    
     const deleteBtn = document.getElementById('deleteModalBtn');
     deleteBtn.disabled = true;
     deleteBtn.textContent = 'Deleting...';
     
-    // Delete all tracks
+    if (isDeleteAll) {
+        // Delete entire library
+        fetch('/library', { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to reset everything
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete library');
+                }
+            })
+            .catch(() => alert('Failed to delete library'))
+            .finally(() => {
+                closeDeleteModal();
+                deleteBtn.disabled = false;
+            });
+        return;
+    }
+    
+    if (deleteTrackIds.length === 0) return;
+    
+    // Delete selected tracks
     const deletePromises = deleteTrackIds.map(id => 
         fetch('/library/' + id, { method: 'DELETE' })
     );
@@ -364,39 +402,39 @@ function executeDelete() {
         .then(responses => {
             const successCount = responses.filter(r => r.ok).length;
             
-            // Animate removal of all targets
-            deleteTargets.forEach(target => {
-                target.style.transition = 'opacity 0.3s, max-height 0.3s, margin 0.3s, padding 0.3s';
-                target.style.opacity = '0';
-                target.style.maxHeight = '0';
-                target.style.margin = '0';
-                target.style.padding = '0';
-                target.style.overflow = 'hidden';
-                setTimeout(() => target.remove(), 300);
-            });
-            
-            // Update track count in header
-            const countEl = document.querySelector('.queue-header h2');
-            if (countEl) {
-                const match = countEl.textContent.match(/(\d+) tracks/);
-                if (match) {
-                    const newCount = Math.max(0, parseInt(match[1]) - successCount);
-                    countEl.textContent = countEl.textContent.replace(/\d+ tracks/, newCount + ' tracks');
-                }
-            }
-            
-            // Update buttons
-            setTimeout(updateDownloadButton, 350);
-            
             if (successCount < deleteTrackIds.length) {
                 alert(`Deleted ${successCount} of ${deleteTrackIds.length} tracks. Some deletions failed.`);
             }
+            
+            // Refresh library list to fix pagination
+            refreshLibraryList();
+            
+            // Reset buttons
+            updateDownloadButton();
+            updateSelectAllButton();
         })
         .catch(() => alert('Failed to delete tracks'))
         .finally(() => {
             closeDeleteModal();
             deleteBtn.disabled = false;
         });
+}
+
+let isDeleteAll = false;
+
+function confirmDeleteAll() {
+    isDeleteAll = true;
+    deleteTargets = [];
+    deleteTrackIds = [];
+    
+    const countEl = document.getElementById('libraryStatsHeader');
+    const match = countEl?.textContent.match(/(\d+) tracks/);
+    const count = match ? parseInt(match[1]) : 'all';
+    
+    document.getElementById('deleteModalHeading').textContent = `Delete Entire Library?`;
+    document.getElementById('deleteModalTitle').innerHTML = `<strong>${count}</strong> tracks will be permanently deleted.<br><span style="color: var(--error);">This cannot be undone!</span>`;
+    document.getElementById('deleteModalBtn').textContent = 'Delete All';
+    document.getElementById('deleteModal').style.display = 'flex';
 }
 
 // Close modal on escape key
@@ -407,6 +445,14 @@ document.addEventListener('keydown', function(e) {
 // Close modal on overlay click
 document.getElementById('deleteModal')?.addEventListener('click', function(e) {
     if (e.target === this) closeDeleteModal();
+});
+
+// Reset select all button after HTMX refresh
+document.body.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail.target.id === 'library-list') {
+        document.getElementById('selectAllBtn').textContent = 'Select All';
+        updateDownloadButton();
+    }
 });
 </script>
 {% endblock %}

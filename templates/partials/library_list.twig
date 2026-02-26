@@ -1,3 +1,10 @@
+{# OOB swap to update header stats (only for HTMX requests, not initial page load) #}
+{% if stats is defined and (is_htmx is not defined or is_htmx) %}
+<h2 id="libraryStatsHeader" hx-swap-oob="true" class="library-stats" style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+    {{ totalTracks }} tracks • {{ (stats.total_size / 1048576)|number_format(1) }} MB
+</h2>
+{% endif %}
+
 {% if tracks is empty %}
 <div class="empty-state">
     <div class="empty-state-icon">📚</div>
