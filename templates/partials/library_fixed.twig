@@ -4,9 +4,11 @@
         <div>
             <div style="font-weight: 600;">Issues Fixed</div>
             <div style="font-size: 13px; color: var(--text-secondary);">
+                {% set has_fixes = result.library_removed > 0 or result.jobs_marked_failed > 0 or (result.watched_tracks_reset|default(0)) > 0 %}
                 {% if result.library_removed > 0 %}Removed {{ result.library_removed }} orphaned library entry(s). {% endif %}
-                {% if result.jobs_marked_failed > 0 %}Marked {{ result.jobs_marked_failed }} job(s) as failed for re-download.{% endif %}
-                {% if result.library_removed == 0 and result.jobs_marked_failed == 0 %}No issues found.{% endif %}
+                {% if result.jobs_marked_failed > 0 %}Marked {{ result.jobs_marked_failed }} job(s) as failed. {% endif %}
+                {% if (result.watched_tracks_reset|default(0)) > 0 %}Reset {{ result.watched_tracks_reset }} watched playlist track(s) for re-download.{% endif %}
+                {% if not has_fixes %}No issues found.{% endif %}
             </div>
         </div>
     </div>

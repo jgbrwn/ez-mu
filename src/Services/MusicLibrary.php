@@ -153,6 +153,12 @@ class MusicLibrary
                     "DELETE FROM jobs WHERE video_id = ? AND status IN ('completed', 'failed')",
                     [$videoId]
                 );
+                
+                // Reset watched playlist track status to 'pending' so it can be re-downloaded
+                $this->db->execute(
+                    "UPDATE watched_playlist_tracks SET status = 'pending', downloaded_at = NULL, job_id = NULL WHERE video_id = ?",
+                    [$videoId]
+                );
             }
         }
 
@@ -185,6 +191,11 @@ class MusicLibrary
         
         // Clear related jobs
         $this->db->execute("DELETE FROM jobs WHERE status IN ('completed', 'failed')");
+        
+        // Reset all watched playlist tracks to 'pending' so they can be re-downloaded
+        $this->db->execute(
+            "UPDATE watched_playlist_tracks SET status = 'pending', downloaded_at = NULL, job_id = NULL WHERE status = 'downloaded'"
+        );
 
         // Clean up empty artist directories
         $singlesDir = $this->musicDir . '/Singles';
@@ -304,11 +315,38 @@ class MusicLibrary
             }
         }
         
+        // Find watched playlist tracks marked as 'downloaded' but not actually in library
+        $orphanedWatchedTracks = [];
+        $watchedTracks = $this->db->query(
+            "SELECT wpt.id, wpt.title, wpt.artist, wpt.video_id, wp.name as playlist_name 
+             FROM watched_playlist_tracks wpt
+             JOIN watched_playlists wp ON wpt.playlist_id = wp.id
+             WHERE wpt.status = 'downloaded'"
+        );
+        foreach ($watchedTracks as $track) {
+            // Check if video_id exists in library
+            $inLibrary = $this->db->queryOne(
+                "SELECT 1 FROM library WHERE video_id = ?",
+                [$track['video_id']]
+            );
+            if (!$inLibrary) {
+                $orphanedWatchedTracks[] = [
+                    'id' => $track['id'],
+                    'title' => $track['title'],
+                    'artist' => $track['artist'],
+                    'video_id' => $track['video_id'],
+                    'playlist_name' => $track['playlist_name'],
+                ];
+            }
+        }
+        
         return [
             'missing_files' => $missingFiles,
             'orphaned_jobs' => $orphanedJobs,
+            'orphaned_watched_tracks' => $orphanedWatchedTracks,
             'library_issues' => count($missingFiles),
             'job_issues' => count($orphanedJobs),
+            'watched_issues' => count($orphanedWatchedTracks),
         ];
     }
     
@@ -345,9 +383,18 @@ class MusicLibrary
             }
         }
         
+        // Reset watched playlist tracks that claim to be 'downloaded' but aren't in library
+        $watchedTracksReset = $this->db->execute(
+            "UPDATE watched_playlist_tracks 
+             SET status = 'pending', downloaded_at = NULL, job_id = NULL 
+             WHERE status = 'downloaded' 
+             AND video_id NOT IN (SELECT video_id FROM library WHERE video_id IS NOT NULL)"
+        );
+        
         return [
             'library_removed' => $libraryRemoved,
             'jobs_marked_failed' => $jobsMarkedFailed,
+            'watched_tracks_reset' => $watchedTracksReset,
         ];
     }
     

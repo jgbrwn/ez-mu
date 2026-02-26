@@ -190,9 +190,17 @@ class QueueService
     public function clearOldCompleted(int $minutes = 30): int
     {
         $cutoff = date('Y-m-d H:i:s', time() - ($minutes * 60));
+        
+        // First, clear the job reference from library entries (to avoid FK constraint)
+        $this->db->execute(
+            "UPDATE library SET job_id = NULL WHERE job_id IN 
+             (SELECT id FROM jobs WHERE status = 'completed' AND completed_at < ?)",
+            [$cutoff]
+        );
+        
+        // Then delete the completed jobs
         return $this->db->execute(
-            "DELETE FROM jobs WHERE status = 'completed' AND completed_at < ? 
-             AND id NOT IN (SELECT job_id FROM library WHERE job_id IS NOT NULL)",
+            "DELETE FROM jobs WHERE status = 'completed' AND completed_at < ?",
             [$cutoff]
         );
     }
