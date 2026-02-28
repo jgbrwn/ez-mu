@@ -150,11 +150,12 @@ EZ-MU includes a built-in session-based login system. To enable:
 2. That's it! Users will see a login page when accessing the app.
 
 **Features:**
-- Session-based authentication
+- Session-based authentication (uses standard PHP sessions)
 - CSRF protection on all forms
 - Rate limiting on login attempts (5 per minute per IP)
 - Logout button in header
 - Works with HTMX requests (redirects properly)
+- **Shared hosting compatible** - no special extensions or configuration needed
 
 ### Method 2: .htaccess Basic Auth
 

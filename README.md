@@ -108,7 +108,7 @@ EZ-MU includes several security features:
 
 ### Authentication
 
-Optional login protection. Set in `.env`:
+Built-in login protection using PHP sessions. Set in `.env`:
 
 ```env
 APP_USER=admin
@@ -116,6 +116,13 @@ APP_PASSWORD=your-secure-password
 ```
 
 When both are set, users must log in to access the application.
+
+**Features:**
+- Works on shared hosting (standard PHP sessions, no extensions needed)
+- Rate-limited login attempts (5 per minute per IP)
+- Secure session handling with session regeneration
+- Theme preference persists across login
+- Logout button in header when authenticated
 
 ### CSRF Protection
 
