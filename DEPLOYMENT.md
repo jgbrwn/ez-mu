@@ -80,12 +80,13 @@ ez-mu/
 ├── src/
 ├── templates/
 ├── vendor/
-└── .env            (optional, for AcoustID - see below)
+└── .env            (copy from .env.example)
 ```
 
-> **Note:** The `.env` file is optional on shared hosting since audio fingerprinting
-> requires `fpcalc` which isn't available. If you do use it, ensure it's placed in
-> the project root (outside `public/`) so it's not web-accessible.
+> **Note:** The `ACOUSTID_API_KEY` setting in `.env` is optional on shared hosting
+> unless you can install a static `fpcalc` binary. For public-facing deployments,
+> set `APP_USER`/`APP_PASSWORD` to enable authentication. Ensure `.env` is placed
+> in the project root (outside `public/`) so it's not web-accessible.
 
 #### 2. Configure Document Root
 
