@@ -609,10 +609,10 @@ Available settings:
 
 Get an AcoustID API key at: https://acoustid.org/api-key
 
-> **Shared Hosting:** The `.env` file is optional since fingerprinting requires
-> `fpcalc` which isn't available on shared hosting. Text-based MusicBrainz
-> lookups work without it. However, setting `APP_USER`/`APP_PASSWORD` is
-> recommended for public-facing deployments.
+> **Shared Hosting Note:** The `ACOUSTID_API_KEY` setting is optional on shared
+> hosting unless you're able to install a static `fpcalc` binary. Text-based
+> MusicBrainz lookups work without it. For public-facing deployments, setting
+> `APP_USER`/`APP_PASSWORD` is strongly recommended.
 
 You can also customize binary paths via environment variables:
 
