@@ -20,8 +20,12 @@ use App\Controllers\WatchedController;
 use App\Controllers\ImportController;
 use App\Controllers\SearchController;
 use App\Controllers\QueueController;
+use App\Controllers\StreamController;
 use App\Services\WatchedPlaylistService;
 use App\Twig\AppExtension;
+use App\Middleware\AuthMiddleware;
+use App\Middleware\CsrfMiddleware;
+use App\Controllers\AuthController;
 
 return [
     // Configuration
@@ -44,10 +48,11 @@ return [
         $twig->getEnvironment()->addGlobal('app_name', $settings['app_name']);
         $twig->getEnvironment()->addGlobal('version', $settings['version']);
         
-        // Add extension for global stats (library count, queue count)
+        // Add extension for global stats (library count, queue count, CSRF, auth)
         $twig->addExtension(new AppExtension(
             $c->get(QueueService::class),
-            $c->get(MusicLibrary::class)
+            $c->get(MusicLibrary::class),
+            $c->get(AuthMiddleware::class)
         ));
         
         return $twig;
@@ -123,7 +128,8 @@ return [
             $c->get(\Slim\Views\Twig::class),
             $c->get(SettingsService::class),
             $c->get(MusicLibrary::class),
-            $c
+            $c,
+            $c->get(AuthMiddleware::class)
         );
     },
 
@@ -160,7 +166,8 @@ return [
             $c->get(Twig::class),
             $c->get(SearchService::class),
             $c->get(MusicLibrary::class),
-            $c->get(QueueService::class)
+            $c->get(QueueService::class),
+            $c->get(RateLimiter::class)
         );
     },
 
@@ -170,6 +177,34 @@ return [
             $c->get(QueueService::class),
             $c->get(DownloadService::class),
             $c->get(MusicLibrary::class)
+        );
+    },
+
+    // Stream Controller
+    StreamController::class => function (ContainerInterface $c) {
+        $settings = $c->get('settings');
+        return new StreamController(
+            $c->get(MusicLibrary::class),
+            $settings['music_dir']
+        );
+    },
+
+    // Authentication Middleware (singleton)
+    AuthMiddleware::class => function () {
+        return new AuthMiddleware();
+    },
+
+    // CSRF Middleware (singleton)
+    CsrfMiddleware::class => function () {
+        return new CsrfMiddleware();
+    },
+
+    // Auth Controller
+    AuthController::class => function (ContainerInterface $c) {
+        return new AuthController(
+            $c->get(Twig::class),
+            $c->get(AuthMiddleware::class),
+            $c->get(RateLimiter::class)
         );
     },
 ];

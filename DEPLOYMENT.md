@@ -135,7 +135,30 @@ Visit your domain. You should see the EZ-MU interface.
 
 ## Password Protection
 
-### Method 1: .htaccess Basic Auth (Recommended)
+EZ-MU offers two authentication options:
+
+### Method 1: Built-in Application Login (Recommended)
+
+EZ-MU includes a built-in session-based login system. To enable:
+
+1. Edit your `.env` file:
+   ```env
+   APP_USER=admin
+   APP_PASSWORD=your-secure-password
+   ```
+
+2. That's it! Users will see a login page when accessing the app.
+
+**Features:**
+- Session-based authentication
+- CSRF protection on all forms
+- Rate limiting on login attempts (5 per minute per IP)
+- Logout button in header
+- Works with HTMX requests (redirects properly)
+
+### Method 2: .htaccess Basic Auth
+
+For additional security or if you prefer web server authentication:
 
 #### 1. Create Password File
 
@@ -170,7 +193,7 @@ Require valid-user
 
 Visit your site - you should see a login prompt.
 
-### Method 2: DirectAdmin Password Protected Directory
+### Method 3: DirectAdmin Password Protected Directory
 
 1. Log into DirectAdmin
 2. Go to **Advanced Features** → **Password Protected Directories**
@@ -178,9 +201,7 @@ Visit your site - you should see a login prompt.
 4. Add users with passwords
 5. Enable protection
 
-### Method 3: Application-Level Auth (Future)
-
-A future version may include built-in user authentication.
+> **Tip:** You can combine Method 1 (built-in) with Method 2 or 3 for defense in depth.
 
 ---
 
@@ -571,16 +592,26 @@ cp .env.example .env
 
 Available settings:
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ACOUSTID_API_KEY` | API key for audio fingerprinting | No (VPS only) |
-| `CRON_SECRET` | Secret key for `/cron/process` endpoint | No (recommended) |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_USER` | Username for built-in login | (none - login disabled) |
+| `APP_PASSWORD` | Password for built-in login | (none - login disabled) |
+| `APP_DEBUG` | Show detailed error messages | `false` |
+| `CRON_SECRET` | Secret key for `/cron/process` endpoint | (none - endpoint disabled) |
+| `ACOUSTID_API_KEY` | API key for audio fingerprinting | (none) |
+
+**Security Variables:**
+
+- `APP_USER` + `APP_PASSWORD`: Both must be set to enable login
+- `APP_DEBUG`: **Always** set to `false` in production
+- `CRON_SECRET`: **Required** if using the cron endpoint
 
 Get an AcoustID API key at: https://acoustid.org/api-key
 
 > **Shared Hosting:** The `.env` file is optional since fingerprinting requires
 > `fpcalc` which isn't available on shared hosting. Text-based MusicBrainz
-> lookups work without it.
+> lookups work without it. However, setting `APP_USER`/`APP_PASSWORD` is
+> recommended for public-facing deployments.
 
 You can also customize binary paths via environment variables:
 
@@ -691,11 +722,25 @@ Visit `/settings` to see which features are available on your hosting.
 
 ### Essential Security Measures
 
-1. **Always use password protection** - Either .htaccess, DirectAdmin/cPanel, or reverse proxy auth
-2. **Keep .htpasswd outside public/** - Store in app root, not web-accessible
+1. **Enable authentication** - Set `APP_USER`/`APP_PASSWORD` in `.env` for built-in login, or use .htaccess
+2. **Disable debug mode** - Set `APP_DEBUG=false` in production (this is the default)
 3. **Use HTTPS** - Get a free SSL cert from Let's Encrypt (automatic with Caddy/FrankenPHP)
-4. **Regular backups** - Backup `data/` and `music/` directories
-5. **Keep updated** - Update yt-dlp regularly for best results
+4. **Keep .htpasswd outside public/** - If using basic auth, store password file in app root
+5. **Regular backups** - Backup `data/` and `music/` directories
+6. **Keep updated** - Update yt-dlp regularly for best results
+
+### Built-in Security Features
+
+EZ-MU includes several security measures:
+
+| Feature | Description |
+|---------|-------------|
+| CSRF Protection | All forms include CSRF tokens |
+| Security Headers | X-Frame-Options, CSP, X-Content-Type-Options |
+| Rate Limiting | Login attempts, search queries, API calls |
+| Path Traversal Protection | File operations validate paths |
+| Session Security | Secure session handling with regeneration |
+| Error Handling | Production mode hides stack traces |
 
 ### Protected Paths
 
@@ -714,7 +759,7 @@ The following directories/files should NEVER be publicly accessible:
 ### Cron Endpoint Security
 
 The `/cron/process` endpoint allows external services to process download jobs.
-If you use this endpoint, protect it with a secret key:
+This endpoint is **disabled by default** and requires a secret key:
 
 1. Add to your `.env` file:
    ```
@@ -725,8 +770,14 @@ If you use this endpoint, protect it with a secret key:
    ```
    https://yourdomain.com/cron/process?key=your-random-secret-here&count=5
    ```
+   
+   Or use the Authorization header:
+   ```
+   Authorization: Bearer your-random-secret-here
+   ```
 
-Without `CRON_SECRET` set, the endpoint is open (but still protected by any basic auth you've configured).
+**Important:** Without `CRON_SECRET` set, the endpoint returns 403 Forbidden.
+This is intentional - if you're not using external cron, leave it unset.
 
 ### Nginx Security Config
 

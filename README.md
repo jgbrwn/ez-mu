@@ -33,6 +33,7 @@ Refactored from [MusicGrabber](https://gitlab.com/g33kphr33k/musicgrabber) - a P
 - **🎯 MusicBrainz** - Automatic metadata enrichment (artist, album, year)
 - **⬇️ Export** - Download single tracks or multiple as a zip file
 - **🔄 Background Processing** - Jobs process automatically on page requests (shared hosting compatible)
+- **🔒 Security** - Optional authentication, CSRF protection, security headers
 - **🌙 Dark/Light Theme** - Toggle with saved preference
 - **📱 Mobile-friendly** - Responsive design
 
@@ -100,6 +101,44 @@ php -S 0.0.0.0:8000 -t public
 ```
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed shared hosting and production deployment instructions.
+
+## Security
+
+EZ-MU includes several security features:
+
+### Authentication
+
+Optional login protection. Set in `.env`:
+
+```env
+APP_USER=admin
+APP_PASSWORD=your-secure-password
+```
+
+When both are set, users must log in to access the application.
+
+### CSRF Protection
+
+All POST/PUT/DELETE requests require a valid CSRF token. This is handled automatically via the `hx-headers` attribute in templates.
+
+### Security Headers
+
+The application sets security headers including:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Content-Security-Policy` (configured for HTMX)
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+### Debug Mode
+
+Set `APP_DEBUG=false` in production (this is the default). When disabled:
+- Stack traces are not displayed to users
+- Error details are logged but not exposed
+- Generic error messages are shown
+
+### Cron Endpoint
+
+The `/cron/process` endpoint requires `CRON_SECRET` to be set in `.env`. Without it, the endpoint is disabled.
 
 ## Configuration
 

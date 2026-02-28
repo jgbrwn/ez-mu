@@ -14,8 +14,15 @@ use App\Controllers\SettingsController;
 use App\Controllers\StreamController;
 use App\Controllers\ImportController;
 use App\Controllers\WatchedController;
+use App\Controllers\AuthController;
 
 return function (App $app) {
+    // Authentication routes
+    $app->get('/login', [AuthController::class, 'loginForm']);
+    $app->post('/login', [AuthController::class, 'login']);
+    $app->get('/logout', [AuthController::class, 'logout']);
+    $app->post('/logout', [AuthController::class, 'logout']);
+    
     // Main UI routes
     $app->get('/', [HomeController::class, 'index']);
     

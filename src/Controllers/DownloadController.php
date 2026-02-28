@@ -107,18 +107,43 @@ class DownloadController
      * 
      * GET /cron/process?key=YOUR_SECRET&count=5
      * 
-     * - key: Optional secret key (set CRON_SECRET in .env)
+     * - key: Required secret key (set CRON_SECRET in .env)
      * - count: Number of jobs to process (default 5, max 20)
+     * 
+     * If CRON_SECRET is not set, this endpoint is disabled for security.
      */
     public function cronProcess(Request $request, Response $response): Response
     {
         $params = $request->getQueryParams();
         
-        // Check secret key if configured
+        // Get configured secret - if not set, endpoint is disabled
         $configuredKey = $_ENV['CRON_SECRET'] ?? '';
-        $providedKey = $params['key'] ?? '';
         
-        if ($configuredKey && $providedKey !== $configuredKey) {
+        // If no secret is configured, disable the endpoint entirely
+        if (empty($configuredKey)) {
+            $response->getBody()->write(json_encode([
+                'error' => 'Cron endpoint disabled',
+                'message' => 'Set CRON_SECRET in .env to enable this endpoint',
+            ]));
+            return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+        }
+        
+        // Get provided key from query param or Authorization header
+        $providedKey = $params['key'] ?? '';
+        if (empty($providedKey)) {
+            // Check Authorization header as alternative
+            $authHeader = $request->getHeaderLine('Authorization');
+            if (str_starts_with($authHeader, 'Bearer ')) {
+                $providedKey = substr($authHeader, 7);
+            }
+        }
+        
+        // Use timing-safe comparison to prevent timing attacks
+        if (empty($providedKey) || !hash_equals($configuredKey, $providedKey)) {
+            // Log failed attempt for monitoring
+            error_log('Cron endpoint: Invalid authentication attempt from ' . 
+                ($request->getServerParams()['REMOTE_ADDR'] ?? 'unknown'));
+            
             $response->getBody()->write(json_encode([
                 'error' => 'Invalid or missing key',
             ]));

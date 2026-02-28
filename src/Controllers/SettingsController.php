@@ -9,6 +9,7 @@ use App\Services\SettingsService;
 use App\Services\Environment;
 use App\Services\MusicLibrary;
 use Psr\Container\ContainerInterface;
+use App\Middleware\AuthMiddleware;
 
 class SettingsController
 {
@@ -16,13 +17,20 @@ class SettingsController
     private SettingsService $settings;
     private MusicLibrary $library;
     private array $appSettings;
+    private AuthMiddleware $auth;
 
-    public function __construct(Twig $twig, SettingsService $settings, MusicLibrary $library, ContainerInterface $container)
-    {
+    public function __construct(
+        Twig $twig, 
+        SettingsService $settings, 
+        MusicLibrary $library, 
+        ContainerInterface $container,
+        AuthMiddleware $auth
+    ) {
         $this->twig = $twig;
         $this->settings = $settings;
         $this->library = $library;
         $this->appSettings = $container->get('settings');
+        $this->auth = $auth;
     }
 
     public function index(Request $request, Response $response): Response
@@ -62,7 +70,14 @@ class SettingsController
         if (!empty($data['youtube_cookies'])) {
             $cookiesContent = trim($data['youtube_cookies']);
             if (!empty($cookiesContent)) {
-                $this->settings->saveYouTubeCookies($cookiesContent);
+                try {
+                    $this->settings->saveYouTubeCookies($cookiesContent);
+                } catch (\InvalidArgumentException $e) {
+                    return $this->twig->render($response, 'partials/settings_saved.twig', [
+                        'message' => 'Settings saved, but cookies error: ' . $e->getMessage(),
+                        'is_error' => true,
+                    ]);
+                }
             }
         }
 
@@ -73,11 +88,22 @@ class SettingsController
 
     public function config(Request $request, Response $response): Response
     {
+        // Basic config always available (needed for JS functionality)
         $config = [
             'version' => $this->appSettings['version'],
             'app_name' => $this->appSettings['app_name'],
-            'settings' => $this->settings->getAll(),
         ];
+        
+        // Only include detailed settings if authenticated or auth is disabled
+        // This prevents information disclosure while still allowing the app to function
+        if (!$this->auth->isEnabled() || $this->auth->isAuthenticated()) {
+            $config['settings'] = $this->settings->getAll();
+        } else {
+            // Minimal settings needed for basic functionality
+            $config['settings'] = [
+                'theme' => $this->settings->get('theme', 'dark'),
+            ];
+        }
 
         $response->getBody()->write(json_encode($config));
         return $response->withHeader('Content-Type', 'application/json');

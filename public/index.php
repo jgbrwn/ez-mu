@@ -8,6 +8,10 @@ declare(strict_types=1);
 
 use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
+use App\Middleware\AuthMiddleware;
+use App\Middleware\CsrfMiddleware;
+use App\Middleware\SecurityHeadersMiddleware;
+use App\Middleware\ErrorHandlerMiddleware;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -24,10 +28,23 @@ $container = $containerBuilder->build();
 AppFactory::setContainer($container);
 $app = AppFactory::create();
 
-// Add middleware
+// Add middleware (order matters - last added is first executed)
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
-$app->addErrorMiddleware(true, true, true);
+
+// Error middleware - use APP_DEBUG from environment (defaults to false for security)
+$debug = filter_var($_ENV['APP_DEBUG'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+$errorMiddleware = $app->addErrorMiddleware($debug, true, true);
+$errorMiddleware->setDefaultErrorHandler(new ErrorHandlerMiddleware($debug));
+
+// Security headers middleware
+$app->add(new SecurityHeadersMiddleware());
+
+// CSRF protection middleware
+$app->add($container->get(CsrfMiddleware::class));
+
+// Authentication middleware
+$app->add($container->get(AuthMiddleware::class));
 
 // Background job processor - processes queued downloads on page requests
 // Essential for shared hosting where cron/workers aren't available

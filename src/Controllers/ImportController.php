@@ -128,12 +128,17 @@ class ImportController
             ]);
         }
 
+        // Clean up old import sessions (older than 1 hour)
+        $this->cleanupOldImportSessions();
+        
         // Generate import session ID
         $importId = bin2hex(random_bytes(8));
         
         // Store tracks in a temp file (shared hosting compatible - no Redis/sessions needed)
         $importFile = sys_get_temp_dir() . "/ezmu_import_{$importId}.json";
-        file_put_contents($importFile, json_encode([
+        
+        // Check import data size (max 512KB)
+        $importData = json_encode([
             'tracks' => $tracks,
             'processed' => 0,
             'queued' => 0,
@@ -141,7 +146,16 @@ class ImportController
             'failed' => 0,
             'results' => [],
             'created_at' => time()
-        ]));
+        ]);
+        
+        // Size limit check (512KB max)
+        if (strlen($importData) > 524288) {
+            return $this->twig->render($response, 'partials/import_status.twig', [
+                'error' => 'Import data too large. Please reduce the number of tracks.',
+            ]);
+        }
+        
+        file_put_contents($importFile, $importData);
 
         return $this->twig->render($response, 'partials/import_batch.twig', [
             'import_id' => $importId,
@@ -264,5 +278,22 @@ class ImportController
             'track' => $line,
             'status' => 'not_found'
         ];
+    }
+    
+    /**
+     * Clean up old import session files (older than 1 hour)
+     */
+    private function cleanupOldImportSessions(): void
+    {
+        $tempDir = sys_get_temp_dir();
+        $pattern = $tempDir . '/ezmu_import_*.json';
+        $maxAge = 3600; // 1 hour
+        $now = time();
+        
+        foreach (glob($pattern) as $file) {
+            if ($now - filemtime($file) > $maxAge) {
+                @unlink($file);
+            }
+        }
     }
 }

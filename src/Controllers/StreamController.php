@@ -11,10 +11,12 @@ use Slim\Psr7\Stream;
 class StreamController
 {
     private MusicLibrary $library;
+    private string $musicDir;
 
-    public function __construct(MusicLibrary $library)
+    public function __construct(MusicLibrary $library, string $musicDir)
     {
         $this->library = $library;
+        $this->musicDir = $musicDir;
     }
 
     /**
@@ -34,6 +36,18 @@ class StreamController
         if (!file_exists($filePath)) {
             $response->getBody()->write('File not found');
             return $response->withStatus(404);
+        }
+        
+        // Security: Validate file path is within allowed music directory
+        // This prevents path traversal attacks if database records are manipulated
+        $realPath = realpath($filePath);
+        $musicDirReal = realpath($this->musicDir);
+        
+        if (!$realPath || !$musicDirReal || !str_starts_with($realPath, $musicDirReal)) {
+            error_log('StreamController: Path traversal attempt blocked for track ' . $id . 
+                     ': ' . $filePath . ' (resolved: ' . ($realPath ?: 'false') . ')');
+            $response->getBody()->write('Access denied');
+            return $response->withStatus(404); // Use 404 to not reveal path validation
         }
 
         $fileSize = filesize($filePath);

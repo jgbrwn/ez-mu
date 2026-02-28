@@ -86,4 +86,53 @@ class RateLimiter
 
         return count($recentRequests) < $maxRequests;
     }
+    
+    /**
+     * Rate limit with IP component
+     * Combines action-based and IP-based limiting
+     * 
+     * @param string $action The action being performed
+     * @param string $ip Client IP address
+     * @param int $maxPerAction Max requests per action per window
+     * @param int $maxPerIp Max total requests per IP per window
+     * @param int $windowSeconds Window size in seconds
+     * @return bool True if allowed, false if rate limited
+     */
+    public function checkLimit(
+        string $action, 
+        string $ip, 
+        int $maxPerAction = 30, 
+        int $maxPerIp = 100,
+        int $windowSeconds = 60
+    ): bool {
+        // Check action-specific limit
+        $actionKey = "action:{$action}";
+        if (!$this->canRequest($actionKey, $maxPerAction, $windowSeconds)) {
+            return false;
+        }
+        
+        // Check IP-based limit
+        $ipKey = "ip:{$ip}";
+        if (!$this->canRequest($ipKey, $maxPerIp, $windowSeconds)) {
+            return false;
+        }
+        
+        // Record both
+        $this->recordRequest($actionKey);
+        $this->recordRequest($ipKey);
+        
+        return true;
+    }
+    
+    /**
+     * Record a request without waiting
+     */
+    private function recordRequest(string $source): void
+    {
+        if (!isset($this->requests[$source])) {
+            $this->requests[$source] = [];
+        }
+        $this->requests[$source][] = microtime(true);
+        $this->lastRequest[$source] = microtime(true);
+    }
 }

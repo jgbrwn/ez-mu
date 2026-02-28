@@ -69,13 +69,47 @@ class SettingsService
 
     /**
      * Save YouTube cookies content
+     * 
+     * @param string $cookiesContent Cookie file content
+     * @return string Path where cookies were saved
+     * @throws \InvalidArgumentException If content is too large or invalid format
      */
     public function saveYouTubeCookies(string $cookiesContent): string
     {
+        // Size limit: 1MB max (cookies files are typically much smaller)
+        $maxSize = 1024 * 1024;
+        if (strlen($cookiesContent) > $maxSize) {
+            throw new \InvalidArgumentException('Cookies file too large (max 1MB)');
+        }
+        
+        // Basic format validation - should look like Netscape cookie format
+        // First non-comment line should have tab-separated fields
+        $lines = explode("\n", $cookiesContent);
+        $hasValidLine = false;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || str_starts_with($line, '#')) {
+                continue;
+            }
+            // Netscape format has 7 tab-separated fields
+            $fields = explode("\t", $line);
+            if (count($fields) >= 6) {
+                $hasValidLine = true;
+                break;
+            }
+        }
+        
+        if (!$hasValidLine && strlen(trim($cookiesContent)) > 0) {
+            throw new \InvalidArgumentException('Invalid cookie file format. Expected Netscape cookie format.');
+        }
+        
         $dataDir = dirname($this->db->getPdo()->query("PRAGMA database_list")->fetchColumn(2));
         $cookiesPath = $dataDir . '/youtube_cookies.txt';
         
+        // Write with restrictive permissions
         file_put_contents($cookiesPath, $cookiesContent);
+        chmod($cookiesPath, 0600);
+        
         $this->set('youtube_cookies_path', $cookiesPath);
         
         return $cookiesPath;

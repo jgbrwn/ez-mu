@@ -242,7 +242,11 @@ class MusicLibrary
 
         foreach ($tracks as $track) {
             if (!empty($track['file_path']) && file_exists($track['file_path'])) {
-                $filename = $track['artist'] . ' - ' . $track['title'] . '.' . pathinfo($track['file_path'], PATHINFO_EXTENSION);
+                // Sanitize filename to prevent directory traversal in zip archive
+                $artist = $this->sanitizeZipFilename($track['artist']);
+                $title = $this->sanitizeZipFilename($track['title']);
+                $extension = pathinfo($track['file_path'], PATHINFO_EXTENSION);
+                $filename = "{$artist} - {$title}.{$extension}";
                 $zip->addFile($track['file_path'], $filename);
             }
         }
@@ -432,5 +436,30 @@ class MusicLibrary
         return $this->db->query(
             'SELECT artist, COUNT(*) as track_count FROM library GROUP BY artist ORDER BY artist'
         );
+    }
+    
+    /**
+     * Sanitize a string for use in a zip filename
+     * Removes path separators and other dangerous characters
+     */
+    private function sanitizeZipFilename(string $name): string
+    {
+        // Remove path separators and null bytes
+        $name = str_replace(['/', '\\', "\0"], '', $name);
+        
+        // Remove other problematic characters for zip entries
+        $name = preg_replace('/[<>:"|?*]/', '', $name);
+        
+        // Limit length
+        if (mb_strlen($name) > 100) {
+            $name = mb_substr($name, 0, 100);
+        }
+        
+        // Fallback if empty
+        if (empty(trim($name))) {
+            $name = 'Unknown';
+        }
+        
+        return trim($name);
     }
 }

@@ -130,7 +130,8 @@ class Environment
         }
 
         // Try 'which' command as fallback (may not work on all hosts)
-        $which = @shell_exec("which {$name} 2>/dev/null");
+        // Use escapeshellarg() to prevent command injection
+        $which = @shell_exec('which ' . escapeshellarg($name) . ' 2>/dev/null');
         if ($which) {
             $path = trim($which);
             if (file_exists($path) && is_executable($path)) {
