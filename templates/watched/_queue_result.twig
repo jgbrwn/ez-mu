@@ -1,6 +1,6 @@
 {% if result.queued > 0 %}
 <div style="margin-bottom: 12px; padding: 10px; background: rgba(29, 185, 84, 0.1); border-radius: 6px; font-size: 13px;">
-    <span style="color: var(--success);">✅ Queued {{ result.queued }} tracks for download.</span>
+    <span style="color: var(--success);">✓ Queued {{ result.queued }} tracks for download.</span>
     {% if result.errors|length > 0 %}
     <br><span style="color: var(--warning);">{{ result.errors|length }} tracks had issues.</span>
     {% endif %}
@@ -23,7 +23,7 @@
 </div>
 {% else %}
 <div style="margin-bottom: 12px; padding: 10px; background: var(--error-bg); border-radius: 6px; color: var(--error); font-size: 13px;">
-    ⚠️ Failed to queue tracks.
+    <span class="icon icon-warning" style="width:14px;height:14px;vertical-align:middle;"></span> Failed to queue tracks.
     {% if result.errors|length > 0 %}
     <br>Errors: {{ result.errors|join(', ') }}
     {% endif %}

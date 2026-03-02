@@ -5,7 +5,7 @@
     {% for r in results %}
     <span style="color: {{ r.success ? 'var(--success)' : 'var(--error)' }};">
         {{ r.name }}
-        {% if r.success %}(+{{ r.new_tracks }}){% else %}(⚠️){% endif %}
+        {% if r.success %}(+{{ r.new_tracks }}){% else %}(!){% endif %}
     </span>{% if not loop.last %}, {% endif %}
     {% endfor %}
 </div>

@@ -25,13 +25,13 @@
             <td>{{ track.title }}</td>
             <td>
                 {% if track.status == 'downloaded' %}
-                <span style="color: var(--success);">✅ Downloaded</span>
+                <span style="color: var(--success);">✓ Downloaded</span>
                 {% elseif track.status == 'queued' %}
                 <span style="color: var(--warning);">🔃 Queued</span>
                 {% elseif track.status == 'pending' %}
                 <span style="color: var(--text-secondary);">Pending</span>
                 {% elseif track.status == 'failed' %}
-                <span style="color: var(--error);">⚠️ Failed</span>
+                <span style="color: var(--error);"><span class="icon icon-warning" style="width:12px;height:12px;vertical-align:middle;"></span> Failed</span>
                 {% else %}
                 {{ track.status }}
                 {% endif %}

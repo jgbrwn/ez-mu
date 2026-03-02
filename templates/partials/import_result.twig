@@ -7,17 +7,17 @@
 <div style="padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
     {% if watched_result and watched_result.success %}
     <div style="padding: 10px 12px; background: rgba(29, 185, 84, 0.1); border-radius: 6px; color: var(--success); font-size: 13px; margin-bottom: 12px;">
-        👁️ Added to <a href="/watched/{{ watched_result.playlist_id }}" style="color: var(--primary);">Watched Playlists</a>.<br>
+        <span class="icon icon-eye" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Added to <a href="/watched/{{ watched_result.playlist_id }}" style="color: var(--primary);">Watched Playlists</a>.<br>
         <span style="font-size: 12px; opacity: 0.9;">After import completes, click "Refresh" on the watched playlist to sync track statuses.</span>
     </div>
     {% elseif watched_result and not watched_result.success %}
     <div style="padding: 10px 12px; background: rgba(234, 179, 8, 0.1); border-radius: 6px; color: #eab308; font-size: 13px; margin-bottom: 12px;">
-        ⚠️ Could not add to watched: {{ watched_result.error }}
+        <span class="icon icon-warning" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Could not add to watched: {{ watched_result.error }}
     </div>
     {% endif %}
     {% if playlist.warning %}
     <div style="padding: 8px 12px; background: rgba(234, 179, 8, 0.1); border: 1px solid #eab308; border-radius: 6px; color: #eab308; font-size: 12px; margin-bottom: 12px;">
-        ⚠️ {{ playlist.warning }}
+        <span class="icon icon-warning" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> {{ playlist.warning }}
     </div>
     {% endif %}
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -26,9 +26,9 @@
             <div style="font-size: 12px; color: var(--text-secondary);">{{ playlist.count }} tracks from {{ playlist.platform|capitalize }}</div>
         </div>
         <button class="save-btn" onclick="startPlaylistImport(this)" data-tracks="{{ playlist.tracks|join('\n')|e('html_attr') }}">
-            ⬇ Import All to Queue
+            ↓ Import All to Queue
         </button>
-        <span id="import-spinner2" style="display: none; margin-left: 8px;">⏳</span>
+        <span id="import-spinner2" style="display: none; margin-left: 8px;">...</span>
         <script>
         function startPlaylistImport(btn) {
             const tracks = btn.dataset.tracks;

@@ -74,7 +74,7 @@
         <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">
             Add & Start Watching
         </button>
-        <span id="add-spinner" class="htmx-indicator" style="margin-left: 12px;">⏳</span>
+        <span id="add-spinner" class="htmx-indicator" style="margin-left: 12px;">...</span>
     </form>
     
     <div id="add-result" style="margin-top: 16px;"></div>
@@ -91,7 +91,7 @@
             hx-indicator="#refresh-all-spinner"
         >
             🔄 Refresh {{ due_for_refresh }} Due
-            <span id="refresh-all-spinner" class="htmx-indicator">⏳</span>
+            <span id="refresh-all-spinner" class="htmx-indicator">...</span>
         </button>
         {% endif %}
     </div>

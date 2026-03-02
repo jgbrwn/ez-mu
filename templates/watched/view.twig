@@ -22,7 +22,7 @@
                 <span>{{ playlist.sync_mode|capitalize }} mode</span>
                 {% if playlist.make_m3u %}<span><span class="icon icon-music" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> M3U enabled</span>{% endif %}
                 <span>Refresh: every {{ playlist.refresh_interval_hours }}h</span>
-                <span>{{ playlist.enabled ? '✅ Active' : '⛔ Paused' }}</span>
+                <span>{{ playlist.enabled ? '✓ Active' : '○ Paused' }}</span>
             </div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -68,10 +68,10 @@
                 class="btn btn-icon-only"
                 title="Download M3U file"
             >
-                ⬇
+                ↓
             </a>
             {% endif %}
-            <span id="action-spinner" class="htmx-indicator">⏳</span>
+            <span id="action-spinner" class="htmx-indicator">...</span>
         </div>
     </div>
 
@@ -239,17 +239,17 @@ function copyM3uLink() {
             
             // If no queued tracks and there are pending tracks, queue next batch
             if (status.queued === 0 && status.pending > 0) {
-                updateStatusDisplay(`⏳ Queueing next batch... (${status.pending} pending)`, true);
+                updateStatusDisplay(`... Queueing next batch... (${status.pending} pending)`, true);
                 
                 const queueRes = await fetch(`/watched/${playlistId}/queue-batch`, { method: 'POST' });
                 const queueData = await queueRes.json();
                 
                 if (queueData.queued > 0) {
-                    updateStatusDisplay(`✅ Queued ${queueData.queued} tracks. ${queueData.remaining_pending} pending, ${queueData.remaining_queued} in queue.`, true);
+                    updateStatusDisplay(`✓ Queued ${queueData.queued} tracks. ${queueData.remaining_pending} pending, ${queueData.remaining_queued} in queue.`, true);
                 } else if (queueData.remaining_pending === 0) {
                     // All done!
                     stopAutoQueue();
-                    updateStatusDisplay('✅ All tracks have been queued!', true);
+                    updateStatusDisplay('✓ All tracks have been queued!', true);
                     setTimeout(() => updateStatusDisplay('', false), 3000);
                 }
             } else if (status.queued > 0) {
@@ -257,12 +257,12 @@ function copyM3uLink() {
             } else if (status.pending === 0) {
                 // All done
                 stopAutoQueue();
-                updateStatusDisplay('✅ All tracks processed!', true);
+                updateStatusDisplay('✓ All tracks processed!', true);
                 setTimeout(() => updateStatusDisplay('', false), 3000);
             }
         } catch (err) {
             console.error('Auto-queue error:', err);
-            updateStatusDisplay('⚠️ Error checking queue status', true);
+            updateStatusDisplay('! Error checking queue status', true);
         }
     }
     

@@ -7,7 +7,7 @@
 
 {% if tracks is empty %}
 <div class="empty-state">
-    <div class="empty-state-icon">📚</div>
+    <div class="empty-state-icon"><span class="icon icon-music" style="width:48px;height:48px;opacity:0.3;"></span></div>
     <p>{% if query %}No tracks match "{{ query }}"{% else %}Your library is empty{% endif %}</p>
     <p style="font-size: 13px; margin-top: 8px;">{% if query %}Try a different search{% else %}Search and download music to build your collection{% endif %}</p>
 </div>
@@ -17,7 +17,7 @@
     <input type="checkbox" class="track-checkbox" name="tracks[]" value="{{ track.id }}" {% if track.file_missing %}disabled title="File missing from disk"{% endif %}>
     {% if track.file_missing %}
     <button type="button" class="track-play-btn" disabled style="cursor: not-allowed; opacity: 0.5;" title="File missing from disk">
-        ⚠️
+        <span class="icon icon-warning" style="width:16px;height:16px;"></span>
     </button>
     {% else %}
     <button type="button" class="track-play-btn" data-id="{{ track.id }}" onclick="playTrack('{{ track.id }}', '{{ track.title|e('js') }}', '{{ track.artist|e('js') }}', '{{ track.thumbnail|e('js') }}')">
@@ -60,7 +60,7 @@
         data-track-title="{{ track.title|e('html_attr') }}"
         onclick="confirmDelete(this)"
     >
-        🗑
+        <span class="icon icon-trash" style="width:16px;height:16px;"></span>
     </button>
 </div>
 {% endfor %}

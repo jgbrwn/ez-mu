@@ -22,7 +22,7 @@
         <span style="color: var(--text-secondary);">(🔃{{ playlist.queued_tracks }})</span>
         {% endif %}
         {% if playlist.failed_tracks > 0 %}
-        <span style="color: var(--error);">⚠️{{ playlist.failed_tracks }}</span>
+        <span style="color: var(--error);"><span class="icon icon-warning" style="width:12px;height:12px;vertical-align:middle;"></span>{{ playlist.failed_tracks }}</span>
         {% endif %}
     </td>
     <td style="color: var(--text-secondary); font-size: 12px;">
@@ -43,7 +43,7 @@
                 title="Refresh now"
             >
                 🔄
-                <span id="refresh-{{ playlist.id }}" class="htmx-indicator">⏳</span>
+                <span id="refresh-{{ playlist.id }}" class="htmx-indicator">...</span>
             </button>
             <button 
                 class="btn btn-small {{ playlist.enabled ? '' : 'btn-muted' }}"
@@ -61,7 +61,7 @@
                 hx-confirm="Delete '{{ playlist.name }}'? This won't delete downloaded files."
                 title="Delete"
             >
-                🗑️
+                <span class="icon icon-trash" style="width:14px;height:14px;"></span>
             </button>
         </div>
     </td>

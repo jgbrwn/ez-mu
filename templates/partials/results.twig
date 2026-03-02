@@ -1,17 +1,17 @@
 {% if error %}
 <div class="empty-state">
-    <div class="empty-state-icon">⚠️</div>
+    <div class="empty-state-icon"><span class="icon icon-warning" style="width:48px;height:48px;opacity:0.5;"></span></div>
     <p style="color: var(--error);">{{ error }}</p>
 </div>
 {% elseif results is empty %}
 <div class="empty-state">
-    <div class="empty-state-icon">{% if message and (message starts with 'Monochrome:' or 'error' in message|lower) %}⚠️{% else %}🔍{% endif %}</div>
+    <div class="empty-state-icon">{% if message and (message starts with 'Monochrome:' or 'error' in message|lower) %}<span class="icon icon-warning" style="width:48px;height:48px;opacity:0.5;"></span>{% else %}<span class="icon icon-search" style="width:48px;height:48px;opacity:0.3;"></span>{% endif %}</div>
     <p{% if message and (message starts with 'Monochrome:' or 'error' in message|lower) %} style="color: var(--warning, #ffc107);"{% endif %}>{{ message|default('No results found') }}</p>
 </div>
 {% else %}
 {% if warnings %}
 <div class="search-warning" style="background: var(--warning-bg, rgba(255, 193, 7, 0.1)); border: 1px solid var(--warning, #ffc107); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-    <span style="font-size: 18px;">⚠️</span>
+    <span class="icon icon-warning" style="width:18px;height:18px;"></span>
     <span style="color: var(--warning, #ffc107);">{{ warnings|join('; ') }}</span>
 </div>
 {% endif %}
@@ -103,7 +103,7 @@
         </div>
     </div>
     <button type="submit" class="download-btn">
-        <span class="btn-icon">⬇</span>
+        <span class="btn-icon">↓</span>
         <span class="btn-spinner"></span>
     </button>
 </form>

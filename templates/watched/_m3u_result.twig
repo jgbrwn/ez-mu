@@ -4,6 +4,6 @@
 </div>
 {% else %}
 <div style="margin-bottom: 12px; padding: 10px; background: var(--error-bg); border-radius: 6px; color: var(--error); font-size: 13px;">
-    ⚠️ Failed to generate M3U: {{ result.error }}
+    <span class="icon icon-warning" style="width:14px;height:14px;vertical-align:middle;"></span> Failed to generate M3U: {{ result.error }}
 </div>
 {% endif %}

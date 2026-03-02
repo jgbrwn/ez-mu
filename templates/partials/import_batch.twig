@@ -15,9 +15,9 @@
         </div>
         
         <div id="import-stats" style="display: flex; gap: 20px; font-size: 13px; margin-bottom: 16px;">
-            <span>✅ Queued: <strong id="stat-queued">0</strong></span>
+            <span><span class="icon icon-check" style="width:14px;height:14px;vertical-align:middle;"></span> Queued: <strong id="stat-queued">0</strong></span>
             <span>⏭ Skipped: <strong id="stat-skipped">0</strong></span>
-            <span>⚠️ Failed: <strong id="stat-failed">0</strong></span>
+            <span><span class="icon icon-warning" style="width:14px;height:14px;vertical-align:middle;"></span> Failed: <strong id="stat-failed">0</strong></span>
         </div>
         
         <div id="import-results" style="max-height: 300px; overflow-y: auto; font-size: 13px;">
@@ -69,9 +69,9 @@
                 
                 let icon = '❓';
                 let color = 'var(--text-secondary)';
-                if (result.status === 'queued') { icon = '✅'; color = 'var(--success)'; }
+                if (result.status === 'queued') { icon = '✓'; color = 'var(--success)'; }
                 else if (result.status === 'skipped') { icon = '⏭'; color = 'var(--warning)'; }
-                else if (result.status === 'failed' || result.status === 'not_found') { icon = '⚠️'; color = 'var(--error)'; }
+                else if (result.status === 'failed' || result.status === 'not_found') { icon = '!'; color = 'var(--error)'; }
                 
                 div.innerHTML = `<span style="color: ${color};">${icon}</span> ${result.track}`;
                 if (result.match) {
@@ -85,7 +85,7 @@
             if (!data.complete) {
                 setTimeout(processNextBatch, 500); // Small delay between batches
             } else {
-                progressText.innerHTML = `<span style="color: var(--success);">✅ Import complete!</span> ${data.queued} queued, ${data.skipped} skipped, ${data.failed} failed.`;
+                progressText.innerHTML = `<span style="color: var(--success);"><span style="color: var(--success);">✓</span> Import complete!</span> ${data.queued} queued, ${data.skipped} skipped, ${data.failed} failed.`;
             }
         } catch (err) {
             console.error('Import batch error:', err);

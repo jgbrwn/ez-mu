@@ -44,16 +44,16 @@
             Select All
         </button>
         <button type="button" class="clear-btn" style="color: var(--error); border-color: var(--error);" id="deleteSelectedBtn" disabled onclick="confirmBulkDelete()">
-            🗑 Delete Selected
+            <span class="icon icon-trash" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Delete Selected
         </button>
         <form id="downloadForm" action="/library/download" method="POST">
             <button type="submit" class="clear-btn" style="color: var(--accent); border-color: var(--accent);" id="downloadSelectedBtn" disabled>
-                ⬇ Download Selected
+                <span class="icon icon-download" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Download Selected
             </button>
         </form>
         {% if totalTracks > 0 %}
         <button type="button" class="clear-btn" style="color: var(--error); border-color: var(--error);" onclick="confirmDeleteAll()">
-            🗑 Delete All
+            <span class="icon icon-trash" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Delete All
         </button>
         {% endif %}
     </div>
@@ -80,7 +80,7 @@
 <!-- Delete Confirmation Modal -->
 <div id="deleteModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
-        <div style="font-size: 24px; margin-bottom: 12px;">🗑️</div>
+        <div style="margin-bottom: 12px;"><span class="icon icon-trash" style="width:24px;height:24px;"></span></div>
         <div id="deleteModalHeading" style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Delete Track?</div>
         <div id="deleteModalTitle" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;"></div>
         <div style="display: flex; gap: 8px; justify-content: center;">
@@ -283,12 +283,12 @@ function updateDownloadButton() {
     deleteBtn.disabled = checked.length === 0;
     
     downloadBtn.textContent = checked.length > 0 
-        ? `⬇ Download (${checked.length})`
-        : '⬇ Download Selected';
+        ? `↓ Download (${checked.length})`
+        : '<span class="icon icon-download" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Download Selected';
     
     deleteBtn.textContent = checked.length > 0 
-        ? `🗑 Delete (${checked.length})`
-        : '🗑 Delete Selected';
+        ? `X Delete (${checked.length})`
+        : '<span class="icon icon-trash" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> Delete Selected';
     
     // Update form with selected IDs
     const form = document.getElementById('downloadForm');

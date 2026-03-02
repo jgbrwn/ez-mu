@@ -40,7 +40,7 @@
         <div class="result-title">{{ title }}</div>
         <div class="result-meta">{{ artist }}</div>
         <div class="result-badges">
-            <span style="color: var(--warning); font-size: 12px;">{{ status == 'processing' ? '⚡ Downloading...' : '⏳ Queued' }}</span>
+            <span style="color: var(--warning); font-size: 12px;">{{ status == 'processing' ? '↓ Downloading...' : '... Queued' }}</span>
         </div>
     </div>
     <div class="status-icon {{ status }}" title="{{ status == 'processing' ? 'Downloading' : 'Queued' }}">

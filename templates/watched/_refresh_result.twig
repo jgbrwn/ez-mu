@@ -2,7 +2,7 @@
 {# Return a row with error state #}
 <tr id="playlist-row-{{ playlist_id }}">
     <td colspan="5" style="color: var(--error);">
-        ⚠️ Refresh failed: {{ error }}
+        <span class="icon icon-warning" style="width:14px;height:14px;vertical-align:middle;"></span> Refresh failed: {{ error }}
     </td>
 </tr>
 {% elseif playlist %}
