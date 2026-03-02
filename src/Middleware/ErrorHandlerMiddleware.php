@@ -142,7 +142,7 @@ class ErrorHandlerMiddleware implements ErrorHandlerInterface
 </head>
 <body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;">
     <div style="max-width: 600px; padding: 20px; text-align: center;">
-        <h1 style="font-size: 72px; margin: 0;">🎵</h1>
+        <div style="width:72px;height:72px;margin:0 auto;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
         <h2 style="margin: 20px 0;">{$title}</h2>
         <p style="color: var(--text-secondary);">{$message}</p>
         <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: var(--accent); color: white; text-decoration: none; border-radius: 6px;">Go Home</a>

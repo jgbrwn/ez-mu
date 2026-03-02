@@ -4,7 +4,7 @@
             {{ playlist.name }}
         </a>
         {% if playlist.make_m3u %}
-        <span title="M3U enabled" style="opacity: 0.5; font-size: 12px;">🎵</span>
+        <span title="M3U enabled" style="opacity: 0.5;"><span class="icon icon-music" style="width:12px;height:12px;"></span></span>
         {% endif %}
         {% if playlist.sync_mode == 'mirror' %}
         <span title="Mirror mode" style="opacity: 0.5; font-size: 12px;">🔄</span>

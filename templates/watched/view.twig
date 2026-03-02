@@ -20,7 +20,7 @@
             <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary);">
                 <span class="source-badge {{ playlist.platform }}">{{ playlist.platform|capitalize }}</span>
                 <span>{{ playlist.sync_mode|capitalize }} mode</span>
-                {% if playlist.make_m3u %}<span>🎵 M3U enabled</span>{% endif %}
+                {% if playlist.make_m3u %}<span><span class="icon icon-music" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> M3U enabled</span>{% endif %}
                 <span>Refresh: every {{ playlist.refresh_interval_hours }}h</span>
                 <span>{{ playlist.enabled ? '✅ Active' : '⛔ Paused' }}</span>
             </div>

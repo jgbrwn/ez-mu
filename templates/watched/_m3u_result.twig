@@ -1,6 +1,6 @@
 {% if result.success %}
 <div style="margin-bottom: 12px; padding: 10px; background: rgba(29, 185, 84, 0.1); border-radius: 6px; color: var(--success); font-size: 13px;">
-    🎵 M3U generated: <code>{{ result.path }}</code> ({{ result.track_count }} tracks)
+    <span class="icon icon-music" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span> M3U generated: <code>{{ result.path }}</code> ({{ result.track_count }} tracks)
 </div>
 {% else %}
 <div style="margin-bottom: 12px; padding: 10px; background: var(--error-bg); border-radius: 6px; color: var(--error); font-size: 13px;">

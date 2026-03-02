@@ -36,7 +36,7 @@
     </div>
     <div id="results" class="results">
         <div class="empty-state">
-            <div class="empty-state-icon">🎵</div>
+            <div class="empty-state-icon"><span class="icon icon-music" style="width:48px;height:48px;opacity:0.3;"></span></div>
             <p>Search for music to get started</p>
         </div>
     </div>
@@ -75,7 +75,7 @@
     function clearResults() {
         document.getElementById('results').innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">🎵</div>
+                <div class="empty-state-icon"><span class="icon icon-music" style="width:48px;height:48px;opacity:0.3;"></span></div>
                 <p>Search for music to get started</p>
             </div>
         `;
@@ -121,7 +121,7 @@
             // Show empty state when all results are faded
             document.getElementById('results').innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-state-icon">🎵</div>
+                    <div class="empty-state-icon"><span class="icon icon-music" style="width:48px;height:48px;opacity:0.3;"></span></div>
                     <p>Search for music to get started</p>
                 </div>
             `;
