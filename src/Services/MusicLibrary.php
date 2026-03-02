@@ -181,7 +181,7 @@ class MusicLibrary
             if (!empty($track['file_path']) && @file_exists($track['file_path'])) {
                 $realPath = @realpath($track['file_path']);
                 if ($realPath && $musicDirReal && str_starts_with($realPath, $musicDirReal)) {
-                    unlink($track['file_path']);
+                    @unlink($track['file_path']);
                 }
             }
             $count++;
@@ -200,13 +200,13 @@ class MusicLibrary
 
         // Clean up empty artist directories
         $singlesDir = $this->musicDir . '/Singles';
-        if (is_dir($singlesDir)) {
-            $dirs = glob($singlesDir . '/*', GLOB_ONLYDIR);
+        if (@is_dir($singlesDir)) {
+            $dirs = @glob($singlesDir . '/*', GLOB_ONLYDIR) ?: [];
             foreach ($dirs as $dir) {
                 $dirReal = @realpath($dir);
                 if ($dirReal && str_starts_with($dirReal, $musicDirReal) && 
-                    count(glob($dir . '/*')) === 0) {
-                    rmdir($dir);
+                    count(@glob($dir . '/*') ?: []) === 0) {
+                    @rmdir($dir);
                 }
             }
         }

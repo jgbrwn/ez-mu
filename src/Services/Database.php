@@ -20,7 +20,7 @@ class Database
     private function connect(): void
     {
         $dir = dirname($this->dbPath);
-        if (!is_dir($dir)) {
+        if (!@is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 

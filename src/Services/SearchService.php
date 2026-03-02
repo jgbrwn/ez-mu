@@ -96,7 +96,7 @@ class SearchService
 
         // Add cookies if available
         $cookiesFile = $this->settings->get('youtube_cookies_path');
-        if ($cookiesFile && file_exists($cookiesFile)) {
+        if ($cookiesFile && @file_exists($cookiesFile)) {
             array_splice($cmd, 1, 0, ['--cookies', $cookiesFile]);
         }
 

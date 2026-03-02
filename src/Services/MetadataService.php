@@ -47,7 +47,7 @@ class MetadataService
         }
 
         // Step 1: Try AcoustID fingerprinting if we have a file and API key
-        if ($filePath && file_exists($filePath) && $this->acoustidApiKey) {
+        if ($filePath && @file_exists($filePath) && $this->acoustidApiKey) {
             $fpResult = $this->runFpcalc($filePath);
             if ($fpResult) {
                 [$duration, $fingerprint] = $fpResult;
@@ -383,7 +383,7 @@ class MetadataService
      */
     public function applyMetadataToFile(string $filePath, string $artist, string $title, ?string $album = null, ?string $year = null): bool
     {
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             return false;
         }
 
@@ -525,12 +525,12 @@ class MetadataService
         fclose($pipes[2]);
         $exitCode = proc_close($process);
 
-        if ($exitCode === 0 && file_exists($tempPath)) {
+        if ($exitCode === 0 && @file_exists($tempPath)) {
             rename($tempPath, $filePath);
             return true;
         }
 
-        if (file_exists($tempPath)) {
+        if (@file_exists($tempPath)) {
             unlink($tempPath);
         }
         return false;

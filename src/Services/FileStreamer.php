@@ -26,7 +26,7 @@ class FileStreamer
         string $contentType = 'application/octet-stream',
         bool $deleteAfter = false
     ): void {
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             throw new \RuntimeException('File not found: ' . $filePath);
         }
 
@@ -70,7 +70,7 @@ class FileStreamer
         fclose($handle);
         
         // Delete temp file if requested
-        if ($deleteAfter && file_exists($filePath)) {
+        if ($deleteAfter && @file_exists($filePath)) {
             unlink($filePath);
         }
         
@@ -87,7 +87,7 @@ class FileStreamer
         string $filename,
         string $contentType = 'application/octet-stream'
     ): ResponseInterface {
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             $response->getBody()->write('File not found');
             return $response->withStatus(404);
         }

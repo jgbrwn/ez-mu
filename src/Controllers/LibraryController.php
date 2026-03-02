@@ -111,7 +111,7 @@ class LibraryController
         // If only one track, stream it directly
         if (count($trackIds) === 1) {
             $track = $this->library->getTrack($trackIds[0]);
-            if ($track && file_exists($track['file_path'])) {
+            if ($track && @file_exists($track['file_path'])) {
                 $filename = $track['artist'] . ' - ' . $track['title'] . '.' . pathinfo($track['file_path'], PATHINFO_EXTENSION);
                 
                 // Use chunked streaming for large FLAC files

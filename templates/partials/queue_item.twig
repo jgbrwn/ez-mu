@@ -67,7 +67,7 @@
         {# Delete button for all jobs #}
         <button 
             class="job-action-btn delete"
-            hx-delete="/queue/{{ job.id }}"
+            hx-post="/queue/{{ job.id }}" hx-headers='{"X-HTTP-Method-Override": "DELETE"}'
             hx-target="closest .job-item"
             hx-swap="outerHTML"
             title="Remove"

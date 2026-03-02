@@ -147,7 +147,7 @@ class DownloadService
         $coverUuid = $info['album']['cover'] ?? '';
 
         $outputDir = $this->musicDir . '/' . $this->singlesDir . '/' . $artist;
-        if (!is_dir($outputDir)) {
+        if (!@is_dir($outputDir)) {
             mkdir($outputDir, 0755, true);
         }
 
@@ -192,7 +192,7 @@ class DownloadService
         }
 
         $outputDir = $this->musicDir . '/' . $this->singlesDir;
-        if (!is_dir($outputDir)) {
+        if (!@is_dir($outputDir)) {
             mkdir($outputDir, 0755, true);
         }
 
@@ -200,7 +200,7 @@ class DownloadService
         $title = $this->sanitizeFilename($job['title'] ?? 'Unknown');
         
         $artistDir = $outputDir . '/' . $artist;
-        if (!is_dir($artistDir)) {
+        if (!@is_dir($artistDir)) {
             mkdir($artistDir, 0755, true);
         }
 
@@ -367,23 +367,23 @@ class DownloadService
     private function relocateFile(array $result, string $newArtist, string $newTitle): array
     {
         $oldPath = $result['file_path'];
-        if (!file_exists($oldPath)) {
+        if (!@file_exists($oldPath)) {
             return $result;
         }
 
         $ext = pathinfo($oldPath, PATHINFO_EXTENSION);
         $newDir = $this->musicDir . '/' . $this->singlesDir . '/' . $newArtist;
         
-        if (!is_dir($newDir)) {
+        if (!@is_dir($newDir)) {
             mkdir($newDir, 0755, true);
         }
 
         $newPath = $newDir . '/' . $newTitle . '.' . $ext;
         
         // Avoid overwriting existing file
-        if (file_exists($newPath) && $newPath !== $oldPath) {
+        if (@file_exists($newPath) && $newPath !== $oldPath) {
             $i = 1;
-            while (file_exists($newPath)) {
+            while (@file_exists($newPath)) {
                 $newPath = $newDir . '/' . $newTitle . ' (' . $i . ').' . $ext;
                 $i++;
             }
@@ -396,7 +396,7 @@ class DownloadService
 
                 // Clean up empty old directory
                 $oldDir = dirname($oldPath);
-                if (is_dir($oldDir) && count(glob($oldDir . '/*')) === 0) {
+                if (@is_dir($oldDir) && count(glob($oldDir . '/*')) === 0) {
                     rmdir($oldDir);
                 }
             }
@@ -420,7 +420,7 @@ class DownloadService
                 $result['artist'] ?? $job['artist'],
                 $result['album'] ?? 'Singles',
                 $result['file_path'],
-                file_exists($result['file_path']) ? filesize($result['file_path']) : 0,
+                @file_exists($result['file_path']) ? filesize($result['file_path']) : 0,
                 $result['duration'] ?? 0,
                 $result['codec'] ?? 'unknown',
                 $result['bitrate'] ?? 0,

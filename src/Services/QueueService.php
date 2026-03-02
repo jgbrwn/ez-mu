@@ -132,7 +132,7 @@ class QueueService
         
         if ($libraryTrack) {
             // If file exists, it's truly in the library
-            if (!empty($libraryTrack['file_path']) && file_exists($libraryTrack['file_path'])) {
+            if (!empty($libraryTrack['file_path']) && @file_exists($libraryTrack['file_path'])) {
                 return true;
             }
             // File is missing - remove the orphaned library entry
@@ -147,7 +147,7 @@ class QueueService
         
         if ($completedJob) {
             // If file exists, it's truly complete
-            if (!empty($completedJob['file_path']) && file_exists($completedJob['file_path'])) {
+            if (!empty($completedJob['file_path']) && @file_exists($completedJob['file_path'])) {
                 return true;
             }
             // File is missing - mark as failed so it can be re-downloaded

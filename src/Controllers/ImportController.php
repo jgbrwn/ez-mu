@@ -171,12 +171,12 @@ class ImportController
         $importId = $request->getAttribute('id');
         $importFile = sys_get_temp_dir() . "/ezmu_import_{$importId}.json";
         
-        if (!file_exists($importFile)) {
+        if (!@file_exists($importFile)) {
             $response->getBody()->write(json_encode(['error' => 'Import session not found']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
         }
 
-        $data = json_decode(file_get_contents($importFile), true);
+        $data = json_decode(@file_get_contents($importFile), true);
         $tracks = $data['tracks'];
         $processed = $data['processed'];
         $batchSize = 5;

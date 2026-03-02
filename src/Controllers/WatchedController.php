@@ -106,7 +106,7 @@ class WatchedController
         // Get M3U filename for the link/download buttons
         $m3uFilename = $this->watchedService->getM3uFilename($playlist['name']);
         $m3uPath = $this->watchedService->getM3uPath($playlist['name']);
-        $m3uExists = file_exists($m3uPath);
+        $m3uExists = @file_exists($m3uPath);
 
         return $this->view->render($response, 'watched/view.twig', [
             'playlist' => $playlist,

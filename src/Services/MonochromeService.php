@@ -366,7 +366,7 @@ class MonochromeService
 
         // Ensure directory exists
         $dir = dirname($outputPath);
-        if (!is_dir($dir)) {
+        if (!@is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
@@ -399,13 +399,13 @@ class MonochromeService
 
         if (!$success || $httpCode >= 400) {
             // Clean up failed download
-            if (file_exists($outputPath)) {
+            if (@file_exists($outputPath)) {
                 unlink($outputPath);
             }
             throw new Exception("Download failed (HTTP {$httpCode}): " . ($error ?: 'Unknown error'));
         }
         
-        if (!file_exists($outputPath) || filesize($outputPath) === 0) {
+        if (!@file_exists($outputPath) || filesize($outputPath) === 0) {
             throw new Exception("Download resulted in empty file");
         }
 

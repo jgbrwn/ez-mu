@@ -26,7 +26,7 @@ class FlacWriter
      */
     public static function writeTags(string $filePath, array $tags): bool
     {
-        if (!file_exists($filePath) || !is_writable($filePath)) {
+        if (!@file_exists($filePath) || !is_writable($filePath)) {
             return false;
         }
 
@@ -86,7 +86,7 @@ class FlacWriter
      */
     public static function readTags(string $filePath): array
     {
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             return [];
         }
 
@@ -344,7 +344,7 @@ class FlacWriter
         } catch (\Exception $e) {
             fclose($sourceHandle);
             fclose($destHandle);
-            if (file_exists($tempFile)) {
+            if (@file_exists($tempFile)) {
                 unlink($tempFile);
             }
             return false;

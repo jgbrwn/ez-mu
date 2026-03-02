@@ -28,7 +28,7 @@ class AudioInfo
             'channels' => 0,
         ];
 
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             return $default;
         }
 
@@ -58,7 +58,7 @@ class AudioInfo
         
         return [
             'extension' => $extension,
-            'size' => file_exists($filePath) ? filesize($filePath) : 0,
+            'size' => @file_exists($filePath) ? filesize($filePath) : 0,
             'codec' => self::extensionToCodec($extension),
         ];
     }
@@ -68,7 +68,7 @@ class AudioInfo
      */
     public static function isValidAudio(string $filePath): bool
     {
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             return false;
         }
 

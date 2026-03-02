@@ -299,7 +299,7 @@ class WatchedPlaylistService
         $playlist = $this->getPlaylist($id);
         if ($playlist && $playlist['make_m3u']) {
             $m3uPath = $this->getM3uPath($playlist['name']);
-            if (file_exists($m3uPath)) {
+            if (@file_exists($m3uPath)) {
                 unlink($m3uPath);
             }
         }
@@ -735,7 +735,7 @@ class WatchedPlaylistService
 
         // Ensure directory exists
         $dir = dirname($this->getM3uPath($playlist['name']));
-        if (!is_dir($dir)) {
+        if (!@is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
@@ -744,13 +744,13 @@ class WatchedPlaylistService
         $m3u .= "#PLAYLIST:{$playlist['name']}\n";
 
         $baseDir = dirname(__DIR__, 2);  // Project root
-        $musicDir = realpath("{$baseDir}/music");
+        $musicDir = @realpath("{$baseDir}/music");
 
         foreach ($tracks as $track) {
             $filePath = $track['file_path'];
-            if (!empty($filePath) && file_exists($filePath)) {
+            if (!empty($filePath) && @file_exists($filePath)) {
                 // Convert to relative path from music/Playlists/
-                $realPath = realpath($filePath);
+                $realPath = @realpath($filePath);
                 if ($realPath && $musicDir && strpos($realPath, $musicDir) === 0) {
                     // Path is under music/ - make relative from Playlists folder
                     $relativePath = '../' . substr($realPath, strlen($musicDir) + 1);
