@@ -12,6 +12,7 @@ use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\SecurityHeadersMiddleware;
 use App\Middleware\ErrorHandlerMiddleware;
+use App\Middleware\MethodOverrideMiddleware;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -30,6 +31,11 @@ $app = AppFactory::create();
 
 // Add middleware (order matters - last added is first executed)
 $app->addBodyParsingMiddleware();
+
+// Method override - allows POST with _METHOD=DELETE for shared hosting
+// Must be added before routing middleware
+$app->add(new MethodOverrideMiddleware());
+
 $app->addRoutingMiddleware();
 
 // Error middleware - use APP_DEBUG from environment (defaults to false for security)

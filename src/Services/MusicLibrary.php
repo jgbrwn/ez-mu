@@ -114,20 +114,21 @@ class MusicLibrary
         }
 
         // Delete file if it exists and is within our music directory (security check)
-        if (!empty($track['file_path']) && file_exists($track['file_path'])) {
-            $realPath = realpath($track['file_path']);
-            $musicDirReal = realpath($this->musicDir);
+        // Use @ to suppress open_basedir warnings on shared hosting
+        if (!empty($track['file_path']) && @file_exists($track['file_path'])) {
+            $realPath = @realpath($track['file_path']);
+            $musicDirReal = @realpath($this->musicDir);
             
             // Only delete if file is within music directory (prevent path traversal)
             if ($realPath && $musicDirReal && str_starts_with($realPath, $musicDirReal)) {
-                unlink($track['file_path']);
+                @unlink($track['file_path']);
                 
                 // Try to remove empty artist directory
                 $dir = dirname($track['file_path']);
-                $dirReal = realpath($dir);
+                $dirReal = @realpath($dir);
                 if ($dirReal && str_starts_with($dirReal, $musicDirReal) && 
-                    is_dir($dir) && count(glob($dir . '/*')) === 0) {
-                    rmdir($dir);
+                    @is_dir($dir) && count(@glob($dir . '/*') ?: []) === 0) {
+                    @rmdir($dir);
                 }
             }
         }
@@ -172,13 +173,13 @@ class MusicLibrary
     public function deleteAllTracks(): int
     {
         $tracks = $this->db->query('SELECT id, file_path, job_id, video_id FROM library');
-        $musicDirReal = realpath($this->musicDir);
+        $musicDirReal = @realpath($this->musicDir);
         $count = 0;
 
         foreach ($tracks as $track) {
             // Delete file if it exists and is within our music directory
-            if (!empty($track['file_path']) && file_exists($track['file_path'])) {
-                $realPath = realpath($track['file_path']);
+            if (!empty($track['file_path']) && @file_exists($track['file_path'])) {
+                $realPath = @realpath($track['file_path']);
                 if ($realPath && $musicDirReal && str_starts_with($realPath, $musicDirReal)) {
                     unlink($track['file_path']);
                 }
@@ -202,7 +203,7 @@ class MusicLibrary
         if (is_dir($singlesDir)) {
             $dirs = glob($singlesDir . '/*', GLOB_ONLYDIR);
             foreach ($dirs as $dir) {
-                $dirReal = realpath($dir);
+                $dirReal = @realpath($dir);
                 if ($dirReal && str_starts_with($dirReal, $musicDirReal) && 
                     count(glob($dir . '/*')) === 0) {
                     rmdir($dir);
@@ -241,7 +242,7 @@ class MusicLibrary
         }
 
         foreach ($tracks as $track) {
-            if (!empty($track['file_path']) && file_exists($track['file_path'])) {
+            if (!empty($track['file_path']) && @file_exists($track['file_path'])) {
                 // Sanitize filename to prevent directory traversal in zip archive
                 $artist = $this->sanitizeZipFilename($track['artist']);
                 $title = $this->sanitizeZipFilename($track['title']);
@@ -275,9 +276,13 @@ class MusicLibrary
     /**
      * Check if a track's file exists on disk
      */
+    /**
+     * Check if a track's file exists on disk
+     * Uses @ to suppress open_basedir warnings on shared hosting
+     */
     public function fileExists(array $track): bool
     {
-        return !empty($track['file_path']) && file_exists($track['file_path']);
+        return !empty($track['file_path']) && @file_exists($track['file_path']);
     }
     
     /**
@@ -309,7 +314,7 @@ class MusicLibrary
             "SELECT id, title, artist, file_path FROM jobs WHERE status = 'completed'"
         );
         foreach ($jobs as $job) {
-            if (!empty($job['file_path']) && !file_exists($job['file_path'])) {
+            if (!empty($job['file_path']) && !@file_exists($job['file_path'])) {
                 $orphanedJobs[] = [
                     'id' => $job['id'],
                     'title' => $job['title'],
@@ -367,7 +372,7 @@ class MusicLibrary
         // Remove library entries with missing files
         $tracks = $this->db->query('SELECT id, file_path FROM library');
         foreach ($tracks as $track) {
-            if (!empty($track['file_path']) && !file_exists($track['file_path'])) {
+            if (!empty($track['file_path']) && !@file_exists($track['file_path'])) {
                 $this->db->execute('DELETE FROM library WHERE id = ?', [$track['id']]);
                 $libraryRemoved++;
             }
@@ -378,7 +383,7 @@ class MusicLibrary
             "SELECT id, file_path FROM jobs WHERE status = 'completed'"
         );
         foreach ($jobs as $job) {
-            if (!empty($job['file_path']) && !file_exists($job['file_path'])) {
+            if (!empty($job['file_path']) && !@file_exists($job['file_path'])) {
                 $this->db->execute(
                     "UPDATE jobs SET status = 'failed', error = 'File missing from disk' WHERE id = ?",
                     [$job['id']]
@@ -416,7 +421,7 @@ class MusicLibrary
             return false;
         }
         
-        return !empty($track['file_path']) && file_exists($track['file_path']);
+        return !empty($track['file_path']) && @file_exists($track['file_path']);
     }
 
     /**

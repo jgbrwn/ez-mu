@@ -33,15 +33,15 @@ class StreamController
         }
 
         $filePath = $track['file_path'];
-        if (!file_exists($filePath)) {
+        if (!@file_exists($filePath)) {
             $response->getBody()->write('File not found');
             return $response->withStatus(404);
         }
         
         // Security: Validate file path is within allowed music directory
         // This prevents path traversal attacks if database records are manipulated
-        $realPath = realpath($filePath);
-        $musicDirReal = realpath($this->musicDir);
+        $realPath = @realpath($filePath);
+        $musicDirReal = @realpath($this->musicDir);
         
         if (!$realPath || !$musicDirReal || !str_starts_with($realPath, $musicDirReal)) {
             error_log('StreamController: Path traversal attempt blocked for track ' . $id . 

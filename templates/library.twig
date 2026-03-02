@@ -373,7 +373,13 @@ function executeDelete() {
     
     if (isDeleteAll) {
         // Delete entire library
-        fetch('/library', { method: 'DELETE' })
+        fetch('/library', {
+            method: 'POST',
+            headers: {
+                'X-HTTP-Method-Override': 'DELETE',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -395,7 +401,13 @@ function executeDelete() {
     
     // Delete selected tracks
     const deletePromises = deleteTrackIds.map(id => 
-        fetch('/library/' + id, { method: 'DELETE' })
+        fetch('/library/' + id, {
+            method: 'POST',
+            headers: {
+                'X-HTTP-Method-Override': 'DELETE',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
     );
     
     Promise.all(deletePromises)
