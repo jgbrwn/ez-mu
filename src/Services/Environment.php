@@ -98,18 +98,21 @@ class Environment
 
     /**
      * Find a binary in common locations
+     * 
+     * Uses @ operator to suppress open_basedir warnings on shared hosting
+     * when checking system paths outside the allowed directory.
      */
     private static function findBinary(string $name): ?string
     {
         // Check configured path first
         $configPath = self::getConfiguredPath($name);
-        if ($configPath && is_executable($configPath)) {
+        if ($configPath && @is_executable($configPath)) {
             return $configPath;
         }
 
-        // Common locations to check
+        // Common locations to check - ordered by likelihood on shared hosting
         $locations = [
-            // User's home directory
+            // User's home directory (most likely on shared hosting)
             getenv('HOME') . '/.local/bin/' . $name,
             getenv('HOME') . '/bin/' . $name,
             
@@ -117,14 +120,15 @@ class Environment
             __DIR__ . '/../../bin/' . $name,
             __DIR__ . '/../../vendor/bin/' . $name,
             
-            // System paths
+            // System paths (may trigger open_basedir on shared hosting)
             '/usr/bin/' . $name,
             '/usr/local/bin/' . $name,
             '/opt/bin/' . $name,
         ];
 
         foreach ($locations as $path) {
-            if (file_exists($path) && is_executable($path)) {
+            // Use @ to suppress open_basedir warnings for paths outside allowed directories
+            if (@file_exists($path) && @is_executable($path)) {
                 return $path;
             }
         }
@@ -134,7 +138,8 @@ class Environment
         $which = @shell_exec('which ' . escapeshellarg($name) . ' 2>/dev/null');
         if ($which) {
             $path = trim($which);
-            if (file_exists($path) && is_executable($path)) {
+            // Also suppress warnings here as 'which' may return system paths
+            if (@file_exists($path) && @is_executable($path)) {
                 return $path;
             }
         }
